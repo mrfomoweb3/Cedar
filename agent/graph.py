@@ -100,12 +100,18 @@ def _after_guardrails(state: CycleState) -> str:
 
 def build_default_agent(store, *, force_deterministic: bool = False,
                         source: MarketDataSource | None = None,
-                        signer: Signer | None = None) -> CedarAgent:
-    """Convenience wiring against a Store instance."""
+                        signer: Signer | None = None,
+                        allocations_provider=None) -> CedarAgent:
+    """Convenience wiring against a Store instance. Allocations come from the
+    chain (VaultRouter dictionary read) when VAULT_ROUTER_HASH is configured,
+    falling back to the local cache with a logged warning otherwise."""
+    if allocations_provider is None:
+        from .chain_state import make_allocations_provider
+        allocations_provider = make_allocations_provider(store)
     return CedarAgent(
         source=source or get_default_source(),
         signer=signer or get_default_signer(),
-        allocations_provider=store.get_allocations,
+        allocations_provider=allocations_provider,
         apply_reallocation=store.apply_reallocation,
         last_reallocation_provider=store.last_reallocation_time,
         record_cycle=store.record_cycle,

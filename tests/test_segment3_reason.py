@@ -75,6 +75,18 @@ def test_sanitize_allows_derived_arithmetic():
     assert out.action == Action.REALLOCATE  # 21.86 / 250 are derived, not fabricated
 
 
+def test_sanitize_allows_portfolio_share_percentages():
+    # Regression: "moving 150 (15% of portfolio)" — amount/total shares and
+    # allocation/total shares are legitimate derived percentages.
+    snap = _validated(0.438, 1.072, 9.182)  # allocations 400/400/200, total 1000
+    d = AgentDecision(action=Action.REALLOCATE, from_pool="PoolA", to_pool="PoolC",
+                      amount=150, confidence=0.9,
+                      reasoning_trace=("Moving 150.0 (15% of total portfolio); PoolA "
+                                       "currently holds 40% of the portfolio at 0.438%"))
+    out = _sanitize(d, snap, Policy(min_apy_delta=1.0))
+    assert out.action == Action.REALLOCATE
+
+
 def test_sanitize_accepts_valid_reallocation():
     snap = _validated(7.0, 12.0, 7.0)
     good = AgentDecision(action=Action.REALLOCATE, from_pool="PoolA",

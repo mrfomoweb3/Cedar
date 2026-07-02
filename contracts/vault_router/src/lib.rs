@@ -58,18 +58,41 @@ pub enum Error {
     SamePool = 2,
     /// amount was zero.
     ZeroAmount = 3,
+    /// caller is not the agent owner.
+    NotOwner = 4,
 }
 
 #[odra::module]
 pub struct VaultRouter {
+    /// The agent account set at install time; sole authorized caller of the
+    /// mutating entrypoints (server-side signing is Cedar's only actuation path,
+    /// and the contract enforces it).
+    owner: Var<Address>,
     /// pool index (0..3) -> recorded allocation.
     allocations: Mapping<u8, U512>,
 }
 
 #[odra::module]
 impl VaultRouter {
-    /// Record an allocation into `pool`. Emits `Deposited`.
+    /// Constructor: the installing account becomes the owner.
+    pub fn init(&mut self) {
+        self.owner.set(self.env().caller());
+    }
+
+    /// The authorized agent account.
+    pub fn get_owner(&self) -> Address {
+        self.owner.get().unwrap_or_revert(&self.env())
+    }
+
+    fn assert_owner(&self) {
+        if self.env().caller() != self.get_owner() {
+            self.env().revert(Error::NotOwner);
+        }
+    }
+
+    /// Record an allocation into `pool`. Owner-only. Emits `Deposited`.
     pub fn deposit(&mut self, pool_id: PoolId, amount: U512) {
+        self.assert_owner();
         if amount.is_zero() {
             self.env().revert(Error::ZeroAmount);
         }
@@ -79,9 +102,10 @@ impl VaultRouter {
         self.env().emit_event(Deposited { pool: pool_id, amount });
     }
 
-    /// Move recorded allocation from one pool to another. Emits `Reallocated`.
-    /// This is Cedar's transaction-producing on-chain action.
+    /// Move recorded allocation from one pool to another. Owner-only.
+    /// Emits `Reallocated`. This is Cedar's transaction-producing on-chain action.
     pub fn reallocate(&mut self, from_pool: PoolId, to_pool: PoolId, amount: U512) {
+        self.assert_owner();
         if amount.is_zero() {
             self.env().revert(Error::ZeroAmount);
         }
@@ -154,5 +178,25 @@ mod tests {
         let mut c = deploy();
         c.deposit(PoolId::PoolA, U512::from(10));
         assert!(c.try_reallocate(PoolId::PoolA, PoolId::PoolA, U512::from(5)).is_err());
+    }
+
+    #[test]
+    fn installer_is_owner() {
+        let env = odra_test::env();
+        let c = VaultRouter::deploy(&env, NoArgs);
+        assert_eq!(c.get_owner(), env.get_account(0));
+    }
+
+    #[test]
+    fn non_owner_cannot_mutate() {
+        let env = odra_test::env();
+        let mut c = VaultRouter::deploy(&env, NoArgs);
+        c.deposit(PoolId::PoolA, U512::from(100));
+        env.set_caller(env.get_account(1));
+        assert!(c.try_deposit(PoolId::PoolA, U512::from(1)).is_err());
+        assert!(c.try_reallocate(PoolId::PoolA, PoolId::PoolB, U512::from(1)).is_err());
+        // state unchanged
+        env.set_caller(env.get_account(0));
+        assert_eq!(c.get_allocation(PoolId::PoolA), U512::from(100));
     }
 }

@@ -137,6 +137,14 @@ class Store:
             rows = self._conn.execute("SELECT pool_id, amount FROM allocations").fetchall()
         return {r["pool_id"]: r["amount"] for r in rows}
 
+    def set_allocation(self, pool_id: str, amount: float) -> None:
+        """Reconcile the cached allocation for a pool to an authoritative
+        (on-chain) value."""
+        with self._lock, self._conn:
+            self._conn.execute(
+                "INSERT OR REPLACE INTO allocations(pool_id, amount) VALUES(?,?)",
+                (pool_id, amount))
+
     def apply_reallocation(self, from_pool: str, to_pool: str, amount: float) -> None:
         with self._lock, self._conn:
             self._conn.execute(

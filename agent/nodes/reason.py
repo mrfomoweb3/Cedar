@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import json
 import os
+from typing import Optional
 
 from ..decision import deterministic_decision
 from ..types import (Action, AgentDecision, CycleState, Policy,
@@ -107,23 +108,27 @@ def _sanitize(decision: AgentDecision, snap: ValidatedSnapshot,
 
     # fabrication check: every number-looking token in the trace must correspond
     # to a value present in the snapshot/policy (cheap, no second LLM call).
-    if not _trace_numbers_grounded(decision.reasoning_trace, snap, policy):
+    if not _trace_numbers_grounded(decision.reasoning_trace, snap, policy, decision):
         return force_hold("reasoning_trace cites a figure not present in the snapshot")
 
     return decision
 
 
 def _trace_numbers_grounded(trace: str, snap: ValidatedSnapshot,
-                            policy: Policy) -> bool:
+                            policy: Policy,
+                            decision: Optional[AgentDecision] = None) -> bool:
     """Fabrication check, targeted at APY-style claims.
 
     The dangerous fabrication is an invented *pool APY* ("PoolB APY is 42.7%").
-    Only numbers presented as percentages are scrutinised; each must be a known
-    APY, a difference of two known APYs (a legitimate delta), or a known policy
-    percentage. Derived quantities that are NOT percentages (e.g. an annual-gain
-    estimate ``apy*amount``, or the reallocation amount) are legitimate model
-    arithmetic and are allowed — grounding of the actual action is enforced
-    separately by the pool/amount/cap checks and the deterministic RECHECK.
+    Only numbers presented as percentages are scrutinised; each must be one of:
+      - a known pool APY or policy percentage,
+      - a difference of two known APYs (a legitimate delta),
+      - a portfolio share: any allocation / total, or the decision's own
+        amount / total (e.g. "moving 150 (15% of portfolio)").
+    Derived quantities that are NOT percentages (e.g. an annual-gain estimate
+    ``apy*amount``) are legitimate model arithmetic and are allowed — grounding
+    of the actual action is enforced separately by the pool/amount/cap checks
+    and the deterministic RECHECK.
     """
     import re
 
@@ -132,12 +137,23 @@ def _trace_numbers_grounded(trace: str, snap: ValidatedSnapshot,
                                     round(policy.max_reallocation_pct, 3)}
     # legitimate pairwise APY deltas (e.g. "delta 8.744%")
     deltas = {round(abs(a - b), 3) for a in known_apys for b in known_apys}
+    # legitimate portfolio shares (allocation/total, decision amount/total)
+    shares: set[float] = set()
+    total = snap.total_value
+    if total > 0:
+        amounts = [r.allocation for r in snap.pools.values()]
+        if decision is not None and decision.amount:
+            amounts.append(decision.amount)
+        for amt in amounts:
+            shares.add(round(amt / total * 100.0, 3))
 
     for m in re.finditer(r"(\d+\.?\d*)\s*%", trace):
         val = round(float(m.group(1)), 3)
         if val in known_pcts:
             continue
         if any(abs(val - d) < 0.05 for d in deltas):
+            continue
+        if any(abs(val - s) < 0.05 for s in shares):
             continue
         return False
     return True

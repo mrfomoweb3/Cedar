@@ -3,6 +3,9 @@ import tempfile
 
 import pytest
 
+# Tests are offline: never attempt on-chain allocation reads.
+os.environ["CEDAR_CHAIN_READ"] = "0"
+
 from agent.cspr_click import MockSigner
 from agent.graph import build_default_agent
 from agent.mcp_clients import MockMarketDataSource

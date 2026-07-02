@@ -35,8 +35,9 @@ not from a human clicking "yes":
    the disagreement path is the last line of defense.
 5. **GUARDRAILS** — cooldown, position cap, cost-vs-gain, and a final anomaly pass.
    First failure short-circuits to a logged, named refusal.
-6. **ACTUATE** — only if everything passes. Signs + submits `reallocate` via the
-   CSPR.click AI Agent Skill and captures the tx hash. Failures are surfaced, never
+6. **ACTUATE** — only if everything passes. Signs + submits the `reallocate` deploy
+   with the agent's own key (server-side signing is the sole actuation path, and the
+   contract enforces it: owner-only entrypoints) and captures the tx hash. Failures are surfaced, never
    silently retried (no double-spend).
 7. **LOG** — one record per cycle powers both the live dashboard feed and the audit
    log.
@@ -56,7 +57,7 @@ agent/
 api/
   main.py                 FastAPI control plane + dashboard endpoints
   store.py                SQLite store (cycle log, policy, allocations, run-state)
-tests/                    per-segment test gates (28 tests)
+tests/                    per-segment test gates (46 tests: 40 Python + 6 contract)
 scripts/                  deploy_contract.sh · seed_demo.py
 ```
 
@@ -129,10 +130,11 @@ the Casper testnet explorer; blocked cycles show the named guardrail that fired.
 
 Minimal by design (`contracts/vault_router/src/lib.rs`):
 
-- `deposit(pool_id, amount)` → records allocation, emits `Deposited`
-- `reallocate(from_pool, to_pool, amount)` → moves allocation, emits `Reallocated`
+- `init()` → installer becomes owner (constructor)
+- `deposit(pool_id, amount)` → records allocation, **owner-only**, emits `Deposited`
+- `reallocate(from_pool, to_pool, amount)` → moves allocation, **owner-only**, emits `Reallocated`
   — **the transaction-producing on-chain action**
-- `get_allocation(pool_id) -> U512` · `get_total_value() -> U512` — views
+- `get_allocation(pool_id) -> U512` · `get_total_value() -> U512` · `get_owner()` — views
 
 Pools are a fixed three-member enum (`PoolA/B/C`), matching the pre-vetted pool list.
 
@@ -146,10 +148,12 @@ scripts/deploy_contract.sh
 ```
 
 Record the deployed contract hash into `VAULT_ROUTER_HASH` (see `.env.example`);
-the CSPR.click signer targets it for the real `reallocate` submission.
+the server-side signer targets it for the real `reallocate` submission. The
+installing account becomes the contract **owner** — `deposit`/`reallocate` are
+owner-only, so only the agent's key can actuate.
 
 **Testnet contract address (LIVE):**
-[`hash-27131991…e850e493`](https://testnet.cspr.live/contract-package/27131991299036f9116c2754a042d682e50dfd4fe66e84c64111b3dae850e493)
+[`hash-dc100561…b1828135`](https://testnet.cspr.live/contract-package/dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135)
 — deployed to `casper-test`, with verifiable `deposit` + `reallocate` transactions.
 See [DEPLOYMENT.md](DEPLOYMENT.md) for all hashes and explorer links.
 
@@ -197,3 +201,38 @@ real Casper MCP + CSPR.click endpoints. Switch via `CEDAR_DATA_SOURCE` /
 - Deterministic recheck → [`agent/nodes/recheck.py`](agent/nodes/recheck.py) + [`agent/decision.py`](agent/decision.py)
 - Cooldown / position-cap / cost / anomaly guardrails → [`agent/nodes/guardrails.py`](agent/nodes/guardrails.py)
 - Every-path logging → [`agent/nodes/log.py`](agent/nodes/log.py)
+
+## On-chain state read-back
+
+Each cycle, OBSERVE reads allocations **directly from the deployed contract's
+storage** (`agent/chain_state.py` — Odra dictionary queries over JSON-RPC), so the
+agent acts on chain truth, not a local cache. RPC failure falls back to the cache
+with a **logged warning**, never silently. The cache is reconciled to chain on
+every successful read.
+
+## Roadmap — beyond the qualification round
+
+Cedar's qualification scope is deliberately narrow: prove that *bounded, auditable
+autonomy* can safely route yield on Casper. What's next:
+
+**Near term (finals round)**
+- Real token custody: extend `VaultRouter` from allocation-records to escrowed
+  CEP-18 balances with per-pool adapters, keeping the owner-gated actuation model.
+- Activate the two-provider price cross-check on mainnet-indexed tokens (the code
+  ships now; testnet test-tokens aren't indexed by cspr.cloud).
+- Policy learning: use the cycle log to tune `min_apy_delta`/cooldown suggestions —
+  proposed to the human, never self-applied (the mandate stays human-owned).
+
+**Medium term**
+- Multi-strategy support: LP fee yield + staking (sCSPR) + lending markets as they
+  mature on Casper, behind the same pre-vetted allow-list guardrail.
+- Notification channel (webhook/Telegram) for EXECUTED/BLOCKED events, so the
+  audit trail reaches the owner in real time.
+- Hosted demo deployment with a public read-only dashboard.
+
+**Positioning**
+The durable asset isn't the yield router — it's the **safety pipeline**
+(validated observation → grounded reasoning → deterministic recheck → named
+guardrails → every-path logging with data provenance). That pattern applies to
+any agent that touches real value, and Cedar is its reference implementation on
+Casper.

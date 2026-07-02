@@ -134,7 +134,11 @@ class CasperMCPDataSource:
 
         self._MCPError = MCPError
         self._trade = CsprTradeClient(cspr_trade_mcp_url)
-        self._gas_estimate = float(os.getenv("CASPER_GAS_ESTIMATE", "0.5"))
+        # Gas estimate for the cost-check guardrail: the actual payment the
+        # signer attaches to a reallocate deploy (Casper fixed-price charges the
+        # full payment), overridable via CASPER_GAS_ESTIMATE.
+        payment_cspr = float(os.getenv("CASPER_CALL_PAYMENT", "5000000000")) / 1e9
+        self._gas_estimate = float(os.getenv("CASPER_GAS_ESTIMATE", str(payment_cspr)))
         self._mapping: Optional[dict[str, str]] = None  # PoolA/B/C -> pair hash
         # Optional real second source (Casper MCP); disabled if no key present.
         self._casper: Optional[object] = None

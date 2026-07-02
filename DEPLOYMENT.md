@@ -3,24 +3,40 @@
 The `VaultRouter` Odra contract is deployed and verified on **Casper Testnet**
 (`casper-test`, protocol 2.0.0).
 
-## Addresses
+## Addresses (v2 — current, owner-gated)
 
 | Item | Value |
 |---|---|
-| Contract package hash | `hash-27131991299036f9116c2754a042d682e50dfd4fe66e84c64111b3dae850e493` |
-| Contract hash (v1) | `contract-a941bdd092c3b64a5697ed9b73713175962202c9fcaab7c616f4987b2e45e362` |
-| Deployer account | `0202a8ff98bbb32ec9b6f917a0d9646ba6f3a30f88aefa7290b6e3ec6be88bf4225a` |
-| Package key name | `vault_router` |
+| **Contract package hash (v2)** | `hash-dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135` |
+| Contract hash (v2) | `contract-d7c7a0ef86d9d9b174d04d1ddbdd72b7a313152804615219da872b324e49e88c` |
+| Owner / deployer account | `0202a8ff98bbb32ec9b6f917a0d9646ba6f3a30f88aefa7290b6e3ec6be88bf4225a` |
+| Package key name | `vault_router_v2` |
 
-**Explorer:** https://testnet.cspr.live/contract-package/27131991299036f9116c2754a042d682e50dfd4fe66e84c64111b3dae850e493
+**Explorer:** https://testnet.cspr.live/contract-package/dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135
+
+v2 adds **owner access control**: the installing account (the agent's key) is the
+sole authorized caller of `deposit`/`reallocate` (`Error::NotOwner = 4`), enforcing
+on-chain that server-side signing is Cedar's only actuation path. The v1 package
+(`hash-27131991…e493`, no access control) remains on testnet as deploy history.
 
 ## Verifiable transactions
 
 | Action | Deploy hash / explorer |
 |---|---|
-| Contract install | [`c25e6514…719cf`](https://testnet.cspr.live/deploy/c25e651472cb0e41f4dc87a8a9744a0e0525cbeef90f51cb8e54a2f2049719cf) |
-| `deposit(PoolA, 1000)` | [`630159ae…3efd9`](https://testnet.cspr.live/deploy/630159ae40397de07b7f2fa565ade24ab9ca6ca50c45272e0bddba5e18d3efd9) |
-| `reallocate(PoolA→PoolB, 400)` | [`c4318a8b…a996`](https://testnet.cspr.live/deploy/c4318a8b38caf8f84be7bb16fb083bc4bf2d02961e728ed0284553531b8ea996) |
+| v2 install (with `init` owner ctor) | [`27883219…4f84`](https://testnet.cspr.live/deploy/278832192721777c73d5e8c13e067a6e9b062acd7f3eac9fe7a6270784014f84) |
+| v2 `deposit(PoolA, 1000)` | [`fb8e11f4…3399`](https://testnet.cspr.live/deploy/fb8e11f4cd58671ea0331eba67e2e9368d7c55d53b87f316251fc86c9af13399) |
+| v2 `reallocate(PoolA→PoolB, 400)` | [`5fe0d16c…02c3`](https://testnet.cspr.live/deploy/5fe0d16c580ff4a8a55e46358b6bec4121b96e93e7aab56c0805d1af51a302c3) |
+| v1 install | [`c25e6514…719cf`](https://testnet.cspr.live/deploy/c25e651472cb0e41f4dc87a8a9744a0e0525cbeef90f51cb8e54a2f2049719cf) |
+| v1 autonomous cycle (Claude-reasoned) | [`ef454d28…cd60`](https://testnet.cspr.live/deploy/ef454d281d2605ea8610a3662fd791b218921cc6d1f7932cceea63588001cd60) |
+
+## On-chain state read-back
+
+The agent reads allocations **from chain** each cycle (`agent/chain_state.py`),
+not from its local cache: contract named key `state` is Odra's storage dictionary;
+item key = `hex(blake2b256(field_index_be_u32 ++ pool_u8))` with `allocations` at
+field index 2; values are `List<U8>`-wrapped `ToBytes(U512)`. Verified live against
+the deployed contract (PoolA=600, PoolB=400 after the seed txns). RPC failure falls
+back to the local cache with a logged warning — never silently.
 
 The `reallocate` call is the transaction-producing on-chain action Cedar's agent
 actuates each cycle. It succeeded without revert after `deposit`, which proves the
