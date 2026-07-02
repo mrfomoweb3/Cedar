@@ -54,11 +54,32 @@ class MarketSnapshot(BaseModel):
     # cspr.cloud DEX rate. Populated only when both providers cover the token.
     implied_price: dict[str, float] = Field(default_factory=dict)
     cross_source_price: dict[str, float] = Field(default_factory=dict)
+    # Explicit, honest data provenance: per pool, was the reading corroborated by
+    # an independent second provider? False => single-source, UNVERIFIED (surfaced
+    # in the reasoning trace and the Guardrails UI, never silently passed).
+    cross_source_verified: dict[str, bool] = Field(default_factory=dict)
     timestamp: float = Field(default_factory=time.time)
 
     @property
     def total_value(self) -> float:
         return sum(p.allocation for p in self.pools.values())
+
+    @property
+    def fully_cross_verified(self) -> bool:
+        """True only if every pool's reading was corroborated by a 2nd source."""
+        return bool(self.cross_source_verified) and all(self.cross_source_verified.values())
+
+    def provenance_note(self) -> str:
+        """One-line data-provenance summary for the reasoning trace / logs."""
+        if not self.cross_source_verified:
+            return "DATA: single-source (cross-source verification unavailable)"
+        verified = sum(1 for v in self.cross_source_verified.values() if v)
+        total = len(self.cross_source_verified)
+        if verified == total:
+            return f"DATA: cross-source VERIFIED ({verified}/{total} pools, 2 providers agree)"
+        if verified == 0:
+            return f"DATA: single-source, UNVERIFIED (0/{total} pools corroborated by 2nd provider)"
+        return f"DATA: partially verified ({verified}/{total} pools cross-source corroborated)"
 
 
 class ValidatedSnapshot(MarketSnapshot):

@@ -102,8 +102,11 @@ class MockMarketDataSource:
                 cross[pid] = val
                 self._cross_divergence = None
 
+            # Mock provides a genuine independent second APY reading per pool.
+            verified = {pid: True for pid in POOL_IDS}
             return MarketSnapshot(pools=pools, gas_estimate=self._gas,
-                                  cross_source_apy=cross)
+                                  cross_source_apy=cross,
+                                  cross_source_verified=verified)
 
 
 # ---------------------------------------------------------------------------
@@ -189,9 +192,12 @@ class CasperMCPDataSource:
                 second = self._casper_price(pair) if self._casper else None
                 if second is not None:
                     cross_price[pid] = second
+        # A pool is cross-verified only when a real 2nd-provider price came back.
+        verified = {pid: pid in cross_price for pid in POOL_IDS}
         return MarketSnapshot(pools=pools, gas_estimate=self._gas_estimate,
                               cross_source_apy=cross, implied_price=implied_price,
-                              cross_source_price=cross_price)
+                              cross_source_price=cross_price,
+                              cross_source_verified=verified)
 
     @staticmethod
     def _implied_price(pair: dict) -> Optional[float]:

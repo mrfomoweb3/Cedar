@@ -32,6 +32,27 @@ export function GuardrailsPanel() {
       <div className="page-title">Guardrails &amp; Safety</div>
       <div className="page-sub">The safety architecture, made inspectable. Every block below is real, logged, and named.</div>
 
+      {gr?.cross_source && (
+        <div className="card" style={{ marginBottom: 16,
+          borderLeft: `3px solid ${gr.cross_source.verified ? 'var(--accent-live)' : 'var(--accent-blocked)'}` }}>
+          <div className="flex between">
+            <div style={{ fontWeight: 600 }}>Data Provenance — Cross-Source Verification</div>
+            <span className={gr.cross_source.verified ? 'badge-ok' : 'badge-warn'}>
+              {gr.cross_source.verified
+                ? `✓ verified · ${gr.cross_source.verified_pools}/${gr.cross_source.total_pools} pools`
+                : `⚑ single-source · unverified`}
+            </span>
+          </div>
+          <div className="mono" style={{ marginTop: 8, fontSize: 12,
+            color: gr.cross_source.verified ? 'var(--accent-live)' : 'var(--accent-blocked)' }}>
+            {gr.cross_source.note}
+          </div>
+          <div className="muted" style={{ marginTop: 8, fontSize: 12, lineHeight: 1.6 }}>
+            {gr.cross_source.detail}
+          </div>
+        </div>
+      )}
+
       <div className="grid-2" style={{ marginBottom: 16 }}>
         {CARDS.map((c) => {
           const n = counts[c.key] ?? 0;

@@ -143,6 +143,13 @@ def _trace_numbers_grounded(trace: str, snap: ValidatedSnapshot,
     return True
 
 
+def _annotate_provenance(decision: AgentDecision, snap: ValidatedSnapshot) -> AgentDecision:
+    """Prepend the data-provenance note so single-source/unverified cycles are
+    visible in the reasoning trace, never silently passed."""
+    decision.reasoning_trace = f"[{snap.provenance_note()}] {decision.reasoning_trace}"
+    return decision
+
+
 def make_reason_node(force_deterministic: bool = False):
     def reason(state: CycleState) -> CycleState:
         snap = state["validated"]
@@ -156,12 +163,12 @@ def make_reason_node(force_deterministic: bool = False):
                 fallback = deterministic_decision(snap, policy)
                 fallback.reasoning_trace = (
                     f"[llm-error->deterministic] {exc} | {fallback.reasoning_trace}")
-                return {"agent_decision": fallback}
+                return {"agent_decision": _annotate_provenance(fallback, snap)}
         else:
             raw = deterministic_decision(snap, policy)
             if not force_deterministic:
                 raw.reasoning_trace = "[no-api-key->deterministic] " + raw.reasoning_trace
 
-        return {"agent_decision": _sanitize(raw, snap, policy)}
+        return {"agent_decision": _annotate_provenance(_sanitize(raw, snap, policy), snap)}
 
     return reason

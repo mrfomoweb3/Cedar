@@ -11,6 +11,10 @@ export function ReasoningCard({ cycle, defaultOpen = false }: { cycle: Cycle; de
   const [open, setOpen] = useState(defaultOpen);
   const variant = outcomeVariant(cycle.outcome);
   const pools = cycle.snapshot?.pools ?? {};
+  const verifiedMap = cycle.snapshot?.cross_source_verified;
+  const singleSource = verifiedMap
+    ? Object.values(verifiedMap).every((v) => !v)
+    : false;
 
   return (
     <div className={`rcard ${variant}`}>
@@ -19,6 +23,11 @@ export function ReasoningCard({ cycle, defaultOpen = false }: { cycle: Cycle; de
           <span className="dot" />
           {outcomeLabel(cycle.outcome)}
           <span className={`tag ${variant}`} style={{ marginLeft: 6 }}>{cycle.outcome}</span>
+          {singleSource && (
+            <span className="tag blocked" title="Readings not corroborated by a second data provider">
+              single-source · unverified
+            </span>
+          )}
         </div>
         <span className="rcard-time">{fmtTime(cycle.finished_at ?? cycle.started_at)}</span>
       </div>

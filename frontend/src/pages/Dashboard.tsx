@@ -20,6 +20,8 @@ export function Dashboard() {
     return { ok: g.passed, label: g.passed ? 'ok' : 'flagged' };
   };
   const dataValid = latest ? latest.outcome !== 'VALIDATION_FAILED' : true;
+  const verifiedMap = latest?.snapshot?.cross_source_verified;
+  const singleSource = verifiedMap ? Object.values(verifiedMap).every((v) => !v) : false;
 
   const seed = async (name: 'spike' | 'bad-data' | 'divergence') => {
     await api.demo(name);
@@ -87,6 +89,12 @@ export function Dashboard() {
             <span>Recheck Agreement</span>
             <span className="badge-ok">
               {latest ? (latest.recheck_agrees ? '✓ agrees' : '✗ disagree') : '—'}
+            </span>
+          </div>
+          <div className="indicator-row">
+            <span>Cross-Source</span>
+            <span className={singleSource ? 'badge-warn' : 'badge-ok'}>
+              {latest ? (singleSource ? '⚑ single-source' : '✓ verified') : '—'}
             </span>
           </div>
         </div>

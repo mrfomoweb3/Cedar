@@ -28,8 +28,20 @@ export interface Snapshot {
   pools: Record<string, PoolReading>;
   gas_estimate: number;
   cross_source_apy: Record<string, number>;
+  implied_price?: Record<string, number>;
+  cross_source_price?: Record<string, number>;
+  cross_source_verified?: Record<string, boolean>;
   timestamp: number;
   total_value?: number;
+}
+
+export interface CrossSourceStatus {
+  verified: boolean;
+  verified_pools: number;
+  total_pools: number;
+  single_source: boolean;
+  note: string;
+  detail: string;
 }
 export interface GuardrailResult { name: string; passed: boolean; detail: string; }
 
@@ -68,6 +80,7 @@ export interface Guardrails {
   };
   trigger_counts: Record<string, number>;
   blocked_history: Cycle[];
+  cross_source?: CrossSourceStatus;
 }
 
 async function req<T>(path: string, init?: RequestInit): Promise<T> {

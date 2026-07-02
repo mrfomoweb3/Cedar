@@ -113,6 +113,44 @@ def guardrails():
         },
         "trigger_counts": store.guardrail_trigger_counts(),
         "blocked_history": store.feed(limit=50, outcome="BLOCKED"),
+        "cross_source": _cross_source_status(),
+    }
+
+
+def _cross_source_status() -> dict:
+    """Data-provenance status from the most recent cycle: is the price cross-check
+    corroborated by a second provider, or is the agent running single-source?"""
+    recent = store.feed(limit=1)
+    default = {"verified": False, "verified_pools": 0, "total_pools": 0,
+               "single_source": True,
+               "note": "no cycles yet",
+               "detail": "Cross-source price verification requires a second provider "
+                         "(cspr.cloud) that indexes the active pools' tokens."}
+    if not recent or not recent[0].get("snapshot"):
+        return default
+    snap = recent[0]["snapshot"]
+    verified_map = snap.get("cross_source_verified") or {}
+    total = len(verified_map)
+    verified = sum(1 for v in verified_map.values() if v)
+    single = verified == 0
+    if total == 0:
+        note = "single-source (no cross-source data)"
+    elif verified == total:
+        note = f"cross-source VERIFIED ({verified}/{total} pools)"
+    elif single:
+        note = f"single-source, UNVERIFIED (0/{total} pools corroborated)"
+    else:
+        note = f"partially verified ({verified}/{total} pools)"
+    return {
+        "verified": verified == total and total > 0,
+        "verified_pools": verified,
+        "total_pools": total,
+        "single_source": single,
+        "note": note,
+        "detail": ("CSPR.trade price readings are corroborated by cspr.cloud DEX rates "
+                   "where indexed. On testnet, cspr.cloud does not index these test-token "
+                   "pools, so readings are single-source and shown as UNVERIFIED — not "
+                   "silently trusted."),
     }
 
 
