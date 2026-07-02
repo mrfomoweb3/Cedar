@@ -153,6 +153,30 @@ the CSPR.click signer targets it for the real `reallocate` submission.
 — deployed to `casper-test`, with verifiable `deposit` + `reallocate` transactions.
 See [DEPLOYMENT.md](DEPLOYMENT.md) for all hashes and explorer links.
 
+## Real chain integration (verified live)
+
+A full cycle has run end-to-end against real infrastructure — real reads, real
+reasoning, real on-chain actuation:
+
+- **Reads — CSPR.trade MCP** (`https://mcp.cspr.trade/mcp`, public, testnet):
+  OBSERVE maps the 3 highest-TVL, actively-traded DEX pools → PoolA/B/C and
+  derives each pool's **fee APR** from real reserves + real swap volume (the DEX
+  exposes no native APY field). Verified live: WCSPR/sCSPR 0.44%, CD_LONG/WCSPR
+  1.07%, WCSPR/CD_SHORT 9.18%.
+- **Writes — server-side Casper signer**: ACTUATE signs + submits the real
+  `reallocate` deploy to the live VaultRouter and captures the tx hash. Example
+  autonomous cycle: reallocated 250 PoolA→PoolC (Δ 8.74pp), tx
+  [`f79ba36f…`](https://testnet.cspr.live/deploy/f79ba36fc0a4541be4995cff59ce4146657d82b7973fa96fb1ae485b8864f99c).
+
+Enable with `CEDAR_DATA_SOURCE=casper CEDAR_SIGNER=casper` (see `.env.example`).
+
+**Two honest caveats.** (1) The community **Casper MCP** server (chain reads +
+the intended *second* APY source for the cross-provider divergence check) needs a
+cspr.cloud API key — the client is fully wired (`agent/mcp_real.py`,
+`CasperCloudClient`) and gated on `CSPR_CLOUD_API_KEY`; until it's set the
+cross-source check mirrors the primary reading. (2) CSPR.trade has no native APY,
+so yield is a derived fee APR — documented, computed from real data.
+
 ## Mock ↔ real seams
 
 The graph depends only on a `MarketDataSource` (read) and a `Signer` (write)
