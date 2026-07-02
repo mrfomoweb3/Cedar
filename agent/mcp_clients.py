@@ -135,7 +135,7 @@ class CasperMCPDataSource:
         self._mapping: Optional[dict[str, str]] = None  # PoolA/B/C -> pair hash
         # Optional real second source (Casper MCP); disabled if no key present.
         self._casper: Optional[object] = None
-        if os.getenv("CSPR_CLOUD_API_KEY") and os.getenv("CASPER_MCP_URL"):
+        if os.getenv("CSPR_CLOUD_API_KEY"):  # URL auto-defaults per network
             try:
                 self._casper = CasperCloudClient()
             except MCPError:
@@ -171,6 +171,8 @@ class CasperMCPDataSource:
         pairs = {p["contractPackageHash"]: p for p in self._trade.get_pairs()}
         pools: dict[str, PoolReading] = {}
         cross: dict[str, float] = {}
+        implied_price: dict[str, float] = {}
+        cross_price: dict[str, float] = {}
         for pid in POOL_IDS:
             pair = pairs[mapping[pid]]
             hist = self._trade.get_pair_price_history(mapping[pid])
@@ -178,20 +180,40 @@ class CasperMCPDataSource:
             pools[pid] = PoolReading(pool_id=pid, apy=apy,
                                      allocation=float(allocations.get(pid, 0.0)),
                                      source="cspr_trade")
-            cross[pid] = self._cross_source_apy(pid, pair, hist, apy)
-        return MarketSnapshot(pools=pools, gas_estimate=self._gas_estimate,
-                              cross_source_apy=cross)
+            cross[pid] = apy  # no second APY provider; APY divergence is a no-op
 
-    def _cross_source_apy(self, pid: str, pair: dict, hist: list, primary: float) -> float:
-        """Second-source APY: real Casper MCP reading if available, else mirror."""
-        if self._casper is None:
-            return primary  # divergence check no-op until CSPR_CLOUD_API_KEY is set
+            # Real two-provider PRICE cross-check (CSPR.trade reserves vs cspr.cloud).
+            price = self._implied_price(pair)
+            if price is not None:
+                implied_price[pid] = price
+                second = self._casper_price(pair) if self._casper else None
+                if second is not None:
+                    cross_price[pid] = second
+        return MarketSnapshot(pools=pools, gas_estimate=self._gas_estimate,
+                              cross_source_apy=cross, implied_price=implied_price,
+                              cross_source_price=cross_price)
+
+    @staticmethod
+    def _implied_price(pair: dict) -> Optional[float]:
+        """token0->token1 price implied by CSPR.trade reserves, decimal-adjusted."""
         try:
-            # When wired, the Casper MCP tool that returns pool yield goes here.
-            # Kept as mirror until the exact tool/response is confirmed against a key.
-            return primary
+            d0 = pair["token0"].get("decimals", 9)
+            d1 = pair["token1"].get("decimals", 9)
+            r0 = int(pair["reserve0"]) / (10 ** d0)
+            r1 = int(pair["reserve1"]) / (10 ** d1)
+            return r1 / r0 if r0 > 0 else None
         except Exception:
-            return primary
+            return None
+
+    def _casper_price(self, pair: dict) -> Optional[float]:
+        """Independent cspr.cloud DEX rate for the pool's token pair, if indexed.
+        Returns None when cspr.cloud has no rate for these tokens (the case for
+        CSPR.trade's low-activity testnet test-tokens) -> price check skips."""
+        try:
+            return self._casper.dex_rate(pair["token0"]["packageHash"],
+                                         pair["token1"]["packageHash"])
+        except Exception:
+            return None
 
 
 def get_default_source() -> MarketDataSource:

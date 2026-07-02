@@ -173,20 +173,39 @@ class CsprTradeClient:
 class CasperCloudClient:
     def __init__(self, url: Optional[str] = None, api_key: Optional[str] = None,
                  network: Optional[str] = None):
-        self.url = url or os.getenv("CASPER_MCP_URL", "")
-        self.api_key = api_key or os.getenv("CSPR_CLOUD_API_KEY", "")
+        # cspr.cloud has distinct per-network hosts (no network header needed).
         self.network = network or os.getenv("X_CASPER_NETWORK", "testnet")
-        if not self.url or not self.api_key:
+        default_url = ("https://mcp.testnet.cspr.cloud/mcp" if self.network == "testnet"
+                       else "https://mcp.cspr.cloud/mcp")
+        self.url = url or os.getenv("CASPER_MCP_URL") or default_url
+        self.api_key = api_key or os.getenv("CSPR_CLOUD_API_KEY", "")
+        if not self.api_key:
             raise MCPError(
-                "CasperCloudClient needs CASPER_MCP_URL + CSPR_CLOUD_API_KEY "
-                "(get a key at cspr.cloud). Header X-Casper-Network defaults to testnet.")
-        self._mcp = _StreamableMCP(self.url, headers={
-            "X-CSPR-Cloud-Api-Key": self.api_key,
-            "X-Casper-Network": self.network,
-        })
+                "CasperCloudClient needs CSPR_CLOUD_API_KEY (get a key at cspr.cloud).")
+        self._mcp = _StreamableMCP(self.url, headers={"X-CSPR-Cloud-Api-Key": self.api_key})
 
     def call(self, name: str, arguments: dict[str, Any]) -> Any:
         return self._mcp.call(name, arguments)
+
+    def dex_rate(self, token_hash: str, target_hash: str) -> Optional[float]:
+        """Latest token->target DEX rate from cspr.cloud, or None if the pair
+        isn't indexed (returns a 'No DEX rate data found' text on testnet for
+        low-activity test tokens). This is the independent second price source."""
+        try:
+            res = self.call("get_ft_dex_rate_latest", {
+                "contractPackageHash": token_hash,
+                "targetContractPackageHash": target_hash,
+            })
+        except MCPError:
+            return None
+        if isinstance(res, dict):
+            for k in ("rate", "dex_rate", "value", "price"):
+                if k in res:
+                    try:
+                        return float(res[k])
+                    except (TypeError, ValueError):
+                        return None
+        return None
 
     def close(self) -> None:
         self._mcp.close()

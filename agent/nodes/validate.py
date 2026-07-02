@@ -41,7 +41,7 @@ def validate(state: CycleState) -> CycleState:
             )
         }
 
-    # 3. Cross-source consistency
+    # 3a. Cross-source APY consistency (second APY provider, when present)
     for pid, reading in snap.pools.items():
         other = snap.cross_source_apy.get(pid)
         if other is None:
@@ -50,8 +50,26 @@ def validate(state: CycleState) -> CycleState:
             return {
                 "validation_failure": ValidationFailure(
                     reason="data validation failed",
-                    detail=(f"cross-source divergence for {pid}: casper_mcp {reading.apy}% "
-                            f"vs cspr_trade {other}% exceeds {policy.cross_source_tolerance}pp"),
+                    detail=(f"cross-source APY divergence for {pid}: {reading.apy}% "
+                            f"vs {other}% exceeds {policy.cross_source_tolerance}pp"),
+                )
+            }
+
+    # 3b. Cross-source PRICE consistency (CSPR.trade reserves vs cspr.cloud DEX
+    # rate) — real two-provider integrity check; runs only when cspr.cloud has a
+    # rate for the pool's tokens (else the pool is absent from cross_source_price).
+    for pid, second in snap.cross_source_price.items():
+        primary = snap.implied_price.get(pid)
+        if primary is None or primary <= 0 or second <= 0:
+            continue
+        divergence_pct = abs(primary - second) / primary * 100.0
+        if divergence_pct > policy.cross_source_tolerance:
+            return {
+                "validation_failure": ValidationFailure(
+                    reason="data validation failed",
+                    detail=(f"cross-source PRICE divergence for {pid}: cspr_trade "
+                            f"{primary:.6f} vs cspr_cloud {second:.6f} "
+                            f"({divergence_pct:.2f}% > {policy.cross_source_tolerance}%)"),
                 )
             }
 

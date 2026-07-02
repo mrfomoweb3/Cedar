@@ -49,6 +49,11 @@ class MarketSnapshot(BaseModel):
     gas_estimate: float = Field(description="Estimated gas cost of a reallocate tx, in CSPR")
     # Optional second-source APY readings for cross-source consistency checks.
     cross_source_apy: dict[str, float] = Field(default_factory=dict)
+    # Optional two-provider PRICE cross-check (real integration): the pool's
+    # token0->token1 price implied by CSPR.trade reserves vs the independent
+    # cspr.cloud DEX rate. Populated only when both providers cover the token.
+    implied_price: dict[str, float] = Field(default_factory=dict)
+    cross_source_price: dict[str, float] = Field(default_factory=dict)
     timestamp: float = Field(default_factory=time.time)
 
     @property
