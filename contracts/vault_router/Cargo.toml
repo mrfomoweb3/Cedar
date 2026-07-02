@@ -1,0 +1,23 @@
+[package]
+name = "vault_router"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+odra = { version = "2.1.0", default-features = false }
+
+[dev-dependencies]
+odra-test = "2.1.0"
+
+[build-dependencies]
+odra-build = "2.1.0"
+
+# rlib -> native unit tests (Odra MockVM); cdylib -> the Casper wasm produced by
+# `cargo odra build`, which compiles this lib with --cfg odra_module="VaultRouter"
+# to switch on the generated #[no_mangle] contract entrypoints.
+[lib]
+crate-type = ["rlib", "cdylib"]
+
+[profile.release]
+codegen-units = 1
+lto = true

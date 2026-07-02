@@ -1,0 +1,21 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Data / local state
+data/*.db
+*.db
+
+# Secrets / env
+.env
+secret_key.pem
+
+# Rust / Odra
+contracts/vault_router/target/
+contracts/vault_router/wasm/
+target/
+
+# OS
+.DS_Store
