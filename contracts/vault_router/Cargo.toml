@@ -21,3 +21,6 @@ crate-type = ["rlib", "cdylib"]
 [profile.release]
 codegen-units = 1
 lto = true
+opt-level = "z"      # optimize for size — smaller wasm => cheaper on-chain install
+strip = true         # drop symbol/debug names
+panic = "abort"      # no unwinding machinery in the wasm

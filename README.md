@@ -148,7 +148,10 @@ scripts/deploy_contract.sh
 Record the deployed contract hash into `VAULT_ROUTER_HASH` (see `.env.example`);
 the CSPR.click signer targets it for the real `reallocate` submission.
 
-**Testnet contract address:** _TODO — paste hash after `scripts/deploy_contract.sh`_
+**Testnet contract address (LIVE):**
+[`hash-27131991…e850e493`](https://testnet.cspr.live/contract-package/27131991299036f9116c2754a042d682e50dfd4fe66e84c64111b3dae850e493)
+— deployed to `casper-test`, with verifiable `deposit` + `reallocate` transactions.
+See [DEPLOYMENT.md](DEPLOYMENT.md) for all hashes and explorer links.
 
 ## Mock ↔ real seams
 

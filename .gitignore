@@ -11,6 +11,8 @@ data/*.db
 # Secrets / env
 .env
 secret_key.pem
+*.pem
+keys/
 
 # Rust / Odra
 contracts/vault_router/target/
