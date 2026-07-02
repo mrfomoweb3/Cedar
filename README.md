@@ -170,6 +170,11 @@ reasoning, real on-chain actuation:
 
 Enable with `CEDAR_DATA_SOURCE=casper CEDAR_SIGNER=casper` (see `.env.example`).
 
+**Actuation is server-side signing only, by design.** A browser wallet SDK
+(CSPR.click) can't be driven by a headless autonomous loop, so ACTUATE signs with
+the agent's own key via casper-client. This is the deliberate, sole write path —
+there is no human-in-the-loop signing step.
+
 **Two honest caveats.** (1) The community **Casper MCP** server (chain reads +
 the intended *second* APY source for the cross-provider divergence check) needs a
 cspr.cloud API key — the client is fully wired (`agent/mcp_real.py`,

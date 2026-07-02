@@ -9,7 +9,10 @@ A ``Signer`` protocol with three implementations:
     returns the real deploy hash. This is what makes the autonomous loop actuate
     on Casper Testnet without a human in the loop (CSPR.click is a browser wallet
     SDK and can't be driven server-side).
-  * ``CsprClickSigner``  -- alias of CasperKeySigner, kept for the documented seam.
+  * ``CsprClickSigner``  -- config-name alias of CasperKeySigner (so
+    CEDAR_SIGNER=csprclick still resolves). Server-side signing is the sole,
+    deliberate actuation path; there is no separate CSPR.click implementation
+    because a browser wallet SDK can't be driven by a headless autonomous loop.
 """
 from __future__ import annotations
 
