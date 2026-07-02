@@ -29,6 +29,18 @@ from .types import POOL_IDS
 POOL_INDEX = {pid: i for i, pid in enumerate(POOL_IDS)}  # PoolA=0, PoolB=1, PoolC=2
 
 
+def _resolve_client_bin() -> str:
+    """Resolve the casper-client path, tolerant of a misconfigured env var
+    (e.g. an inline comment leaking through .env parsing). Falls back to the
+    cargo install path, then bare 'casper-client' on PATH."""
+    raw = (os.getenv("CASPER_CLIENT_BIN") or "").split("#", 1)[0].strip()
+    default = os.path.expanduser("~/.cargo/bin/casper-client")
+    for cand in (raw, default):
+        if cand and os.path.isfile(cand):
+            return cand
+    return "casper-client"
+
+
 class Signer(Protocol):
     def reallocate(self, from_pool: str, to_pool: str, amount: float) -> str:
         """Submit a reallocate tx; return the tx hash. Raise on failure."""
@@ -75,8 +87,7 @@ class CasperKeySigner:
         self.chain = chain or os.getenv("CASPER_CHAIN", "casper-test")
         self.secret_key = secret_key or os.getenv("CASPER_SECRET_KEY", "")
         self.contract_hash = contract_hash or os.getenv("VAULT_ROUTER_HASH", "")
-        self.client_bin = client_bin or os.getenv("CASPER_CLIENT_BIN",
-                                                  os.path.expanduser("~/.cargo/bin/casper-client"))
+        self.client_bin = client_bin or _resolve_client_bin()
         self.payment = os.getenv("CASPER_CALL_PAYMENT", "5000000000")
         self.confirm = os.getenv("CEDAR_CONFIRM_TX", "0") == "1"
         if not self.secret_key or not self.contract_hash:

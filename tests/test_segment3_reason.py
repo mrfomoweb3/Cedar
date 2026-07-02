@@ -63,6 +63,18 @@ def test_sanitize_rejects_fabricated_figure():
     assert "not present in the snapshot" in out.reasoning_trace
 
 
+def test_sanitize_allows_derived_arithmetic():
+    # Regression: a trace citing a legitimately-derived non-% figure (annual gain
+    # = apy-delta * amount) must NOT be force-held as "fabricated".
+    snap = _validated(0.438, 1.072, 9.182)
+    d = AgentDecision(action=Action.REALLOCATE, from_pool="PoolA", to_pool="PoolC",
+                      amount=100, confidence=0.95,
+                      reasoning_trace=("Delta PoolA 0.438% to PoolC 9.182% is 8.744%; "
+                                       "annual gain ~8.744% * 250 = ~21.86 units vs gas 0.5"))
+    out = _sanitize(d, snap, Policy(min_apy_delta=1.0))
+    assert out.action == Action.REALLOCATE  # 21.86 / 250 are derived, not fabricated
+
+
 def test_sanitize_accepts_valid_reallocation():
     snap = _validated(7.0, 12.0, 7.0)
     good = AgentDecision(action=Action.REALLOCATE, from_pool="PoolA",

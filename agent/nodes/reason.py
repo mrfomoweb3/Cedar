@@ -115,33 +115,29 @@ def _sanitize(decision: AgentDecision, snap: ValidatedSnapshot,
 
 def _trace_numbers_grounded(trace: str, snap: ValidatedSnapshot,
                             policy: Policy) -> bool:
+    """Fabrication check, targeted at APY-style claims.
+
+    The dangerous fabrication is an invented *pool APY* ("PoolB APY is 42.7%").
+    Only numbers presented as percentages are scrutinised; each must be a known
+    APY, a difference of two known APYs (a legitimate delta), or a known policy
+    percentage. Derived quantities that are NOT percentages (e.g. an annual-gain
+    estimate ``apy*amount``, or the reallocation amount) are legitimate model
+    arithmetic and are allowed — grounding of the actual action is enforced
+    separately by the pool/amount/cap checks and the deterministic RECHECK.
+    """
     import re
 
-    known: set[float] = set()
-    for r in snap.pools.values():
-        known.add(round(r.apy, 3))
-        known.add(round(r.allocation, 3))
-    known.add(round(snap.gas_estimate, 3))
-    known.add(round(snap.total_value, 3))
-    known.update({round(policy.min_apy_delta, 3), round(policy.max_reallocation_pct, 3)})
+    known_apys = {round(r.apy, 3) for r in snap.pools.values()}
+    known_pcts = set(known_apys) | {round(policy.min_apy_delta, 3),
+                                    round(policy.max_reallocation_pct, 3)}
+    # legitimate pairwise APY deltas (e.g. "delta 8.744%")
+    deltas = {round(abs(a - b), 3) for a in known_apys for b in known_apys}
 
-    for tok in re.findall(r"\d+\.?\d*", trace):
-        try:
-            val = round(float(tok), 3)
-        except ValueError:
+    for m in re.finditer(r"(\d+\.?\d*)\s*%", trace):
+        val = round(float(m.group(1)), 3)
+        if val in known_pcts:
             continue
-        # small integers (0-3) and pool index digits are noise; ignore.
-        if val <= 3:
-            continue
-        # accept if it matches a known value, a delta of two known values, or a
-        # percentage of total (the amount the engine itself would compute).
-        if val in known:
-            continue
-        if any(abs(val - abs(a - b)) < 0.05 for a in known for b in known):
-            continue
-        pct_amounts = {round(snap.total_value * (p / 100.0), 3)
-                       for p in (policy.max_reallocation_pct,)}
-        if any(abs(val - amt) < 0.5 for amt in pct_amounts):
+        if any(abs(val - d) < 0.05 for d in deltas):
             continue
         return False
     return True

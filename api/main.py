@@ -25,6 +25,10 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from agent.config import load_env
+
+load_env()  # load .env before reading any CEDAR_*/CASPER_* config below
+
 from agent.cspr_click import explorer_url, get_default_signer
 from agent.graph import build_default_agent
 from agent.mcp_clients import MockMarketDataSource, get_default_source
