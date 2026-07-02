@@ -1,0 +1,55 @@
+# Cedar — Render Blueprint: managed Postgres + the autonomous API service.
+# Deploy: push to GitHub, then Render Dashboard → New → Blueprint → pick this repo.
+# Set the three secret env vars (sync:false) in the dashboard after creation.
+databases:
+  - name: cedar-db
+    plan: free
+    databaseName: cedar
+    user: cedar
+
+services:
+  - type: web
+    name: cedar-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free            # NOTE: free web services sleep after ~15m idle, which
+                          # pauses the autonomous loop. Use a paid plan (or an
+                          # external keep-alive ping to /healthz) for true 24/7.
+    healthCheckPath: /healthz
+    numInstances: 1       # MUST stay 1 — the scheduler is an in-process thread.
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cedar-db
+          property: connectionString
+      # --- runtime posture: real reads + Claude; safe (mock) signer by default ---
+      - key: CEDAR_DATA_SOURCE
+        value: casper
+      - key: CEDAR_SIGNER
+        value: mock        # set to "casper" to actuate real on-chain txns
+      - key: CEDAR_AUTOSTART
+        value: "1"
+      - key: CEDAR_INTERVAL
+        value: "300"       # 5 min; real MCP reads + one Claude call per cycle
+      - key: CEDAR_MODEL
+        value: claude-sonnet-4-6
+      # --- chain + MCP endpoints (testnet) ---
+      - key: CASPER_NODE_URL
+        value: https://node.testnet.casper.network/rpc
+      - key: CASPER_CHAIN
+        value: casper-test
+      - key: VAULT_ROUTER_HASH
+        value: hash-dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135
+      - key: CSPR_TRADE_MCP_URL
+        value: https://mcp.cspr.trade/mcp
+      - key: CASPER_MCP_URL
+        value: https://mcp.testnet.cspr.cloud/mcp
+      - key: X_CASPER_NETWORK
+        value: testnet
+      # --- secrets: set these in the Render dashboard (never committed) ---
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: CSPR_CLOUD_API_KEY
+        sync: false
+      - key: CASPER_SECRET_KEY_B64   # only needed if CEDAR_SIGNER=casper
+        sync: false

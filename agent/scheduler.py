@@ -5,12 +5,15 @@ OBSERVE). Runs on a background thread so FastAPI can serve while it ticks.
 """
 from __future__ import annotations
 
+import logging
 import threading
 import time
 
 from api.store import Store
 
 from .graph import CedarAgent
+
+log = logging.getLogger("cedar.scheduler")
 
 
 class Scheduler:
@@ -47,11 +50,23 @@ class Scheduler:
     def _run(self) -> None:
         while not self._stop.is_set():
             # Kill switch: check pause at the top of each cycle.
-            if self.store.is_paused():
-                self.store.set_status("paused")
-            else:
-                self.run_once()
-            self.store.set_next_cycle_at(time.time() + self.interval)
+            try:
+                if self.store.is_paused():
+                    self.store.set_status("paused")
+                else:
+                    self.run_once()
+            except Exception:  # noqa: BLE001
+                # A 24/7 loop must survive a bad cycle (RPC hiccup, MCP timeout,
+                # LLM error). Log via status and continue to the next interval.
+                log.exception("cycle failed; continuing to next interval")
+                try:
+                    self.store.set_status("error")
+                except Exception:  # noqa: BLE001
+                    pass
+            try:
+                self.store.set_next_cycle_at(time.time() + self.interval)
+            except Exception:  # noqa: BLE001
+                pass
             # Sleep in small slices so stop()/pause take effect promptly.
             waited = 0.0
             while waited < self.interval and not self._stop.is_set():

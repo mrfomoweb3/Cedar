@@ -1,130 +1,157 @@
-"""Persistent store (SQLite): cycle log, policy, allocations, run-state.
+"""Persistent store: cycle log, policy, allocations, run-state.
 
-One ``cycles`` table is the source of truth for the Dashboard feed and the
-Audit Log. Allocations are cached locally so the loop can read current on-chain
-state without an extra call each cycle (and so demos work fully offline); the
-real VaultRouter get_allocation values would reconcile this in production.
+Backend-agnostic via SQLAlchemy Core:
+  * ``DATABASE_URL`` set  -> that database (Postgres in cloud/production)
+  * otherwise             -> local SQLite file at ``CEDAR_DB``
+
+The identical code path runs on both, so the production (Postgres) behaviour is
+exercised by the SQLite test-suite. One ``cycles`` table is the source of truth
+for the Dashboard feed and the Audit Log.
 """
 from __future__ import annotations
 
 import json
 import os
-import sqlite3
 import threading
-import time
 from typing import Any, Optional
+
+from sqlalchemy import (Column, Float, Integer, MetaData, String, Table, Text,
+                        create_engine, delete, func, insert, select, update)
+from sqlalchemy.engine import Engine
 
 from agent.types import POOL_IDS, Policy
 
 DB_PATH = os.getenv("CEDAR_DB", os.path.join(os.path.dirname(__file__), "..", "data", "cedar.db"))
 
+_metadata = MetaData()
+
+cycles_t = Table(
+    "cycles", _metadata,
+    Column("id", String, primary_key=True),
+    Column("started_at", Float, nullable=False),
+    Column("finished_at", Float),
+    Column("outcome", String, nullable=False),
+    Column("action", String),
+    Column("from_pool", String),
+    Column("to_pool", String),
+    Column("amount", Float),
+    Column("confidence", Float),
+    Column("reasoning", Text),
+    Column("recheck_agrees", Integer),
+    Column("hold_reason", Text),
+    Column("tx_hash", String),
+    Column("snapshot_json", Text),
+    Column("guardrails_json", Text),
+)
+kv_t = Table(
+    "kv", _metadata,
+    Column("key", String, primary_key=True),
+    Column("value", Text, nullable=False),
+)
+allocations_t = Table(
+    "allocations", _metadata,
+    Column("pool_id", String, primary_key=True),
+    Column("amount", Float, nullable=False),
+)
+
+
+def _make_engine(url_or_path: str) -> Engine:
+    db_url = os.getenv("DATABASE_URL", "").strip()
+    if db_url:
+        # normalize common Heroku/Render style prefixes to a psycopg3 driver
+        if db_url.startswith("postgres://"):
+            db_url = db_url.replace("postgres://", "postgresql+psycopg://", 1)
+        elif db_url.startswith("postgresql://"):
+            db_url = db_url.replace("postgresql://", "postgresql+psycopg://", 1)
+        return create_engine(db_url, pool_pre_ping=True, pool_recycle=1800)
+    path = os.path.abspath(url_or_path)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    return create_engine(f"sqlite:///{path}",
+                         connect_args={"check_same_thread": False})
+
 
 class Store:
     def __init__(self, path: str = DB_PATH):
-        self.path = os.path.abspath(path)
-        os.makedirs(os.path.dirname(self.path), exist_ok=True)
+        self.path = path
         self._lock = threading.Lock()
-        self._conn = sqlite3.connect(self.path, check_same_thread=False)
-        self._conn.row_factory = sqlite3.Row
-        self._init_schema()
+        self._engine = _make_engine(path)
+        self._dialect = self._engine.dialect.name
+        _metadata.create_all(self._engine)
+        self._seed_allocations()
 
-    def _init_schema(self) -> None:
-        with self._lock, self._conn:
-            self._conn.executescript(
-                """
-                CREATE TABLE IF NOT EXISTS cycles (
-                    id            TEXT PRIMARY KEY,
-                    started_at    REAL NOT NULL,
-                    finished_at   REAL,
-                    outcome       TEXT NOT NULL,
-                    action        TEXT,
-                    from_pool     TEXT,
-                    to_pool       TEXT,
-                    amount        REAL,
-                    confidence    REAL,
-                    reasoning     TEXT,
-                    recheck_agrees INTEGER,
-                    hold_reason   TEXT,
-                    tx_hash       TEXT,
-                    snapshot_json TEXT,
-                    guardrails_json TEXT
-                );
-                CREATE TABLE IF NOT EXISTS kv (
-                    key TEXT PRIMARY KEY,
-                    value TEXT NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS allocations (
-                    pool_id TEXT PRIMARY KEY,
-                    amount  REAL NOT NULL
-                );
-                """
-            )
-            # seed allocations if empty
-            cur = self._conn.execute("SELECT COUNT(*) AS c FROM allocations")
-            if cur.fetchone()["c"] == 0:
+    # -- upsert helper -----------------------------------------------------
+    def _upsert(self, conn, table: Table, values: dict, index_elements: list[str]):
+        if self._dialect == "postgresql":
+            from sqlalchemy.dialects.postgresql import insert as pg_insert
+            stmt = pg_insert(table).values(**values)
+            update_cols = {c: stmt.excluded[c] for c in values if c not in index_elements}
+            stmt = stmt.on_conflict_do_update(index_elements=index_elements,
+                                              set_=update_cols) if update_cols \
+                else stmt.on_conflict_do_nothing(index_elements=index_elements)
+        else:  # sqlite
+            from sqlalchemy.dialects.sqlite import insert as sq_insert
+            stmt = sq_insert(table).values(**values)
+            update_cols = {c: stmt.excluded[c] for c in values if c not in index_elements}
+            stmt = stmt.on_conflict_do_update(index_elements=index_elements,
+                                              set_=update_cols) if update_cols \
+                else stmt.on_conflict_do_nothing(index_elements=index_elements)
+        conn.execute(stmt)
+
+    def _seed_allocations(self) -> None:
+        with self._lock, self._engine.begin() as conn:
+            count = conn.execute(select(func.count()).select_from(allocations_t)).scalar()
+            if not count:
                 seed = {"PoolA": 400.0, "PoolB": 400.0, "PoolC": 200.0}
                 for pid in POOL_IDS:
-                    self._conn.execute(
-                        "INSERT INTO allocations(pool_id, amount) VALUES(?,?)",
-                        (pid, seed.get(pid, 0.0)),
-                    )
+                    conn.execute(insert(allocations_t).values(
+                        pool_id=pid, amount=seed.get(pid, 0.0)))
 
     # -- cycle log ---------------------------------------------------------
     def record_cycle(self, record: dict[str, Any]) -> None:
         cols = ("id", "started_at", "finished_at", "outcome", "action", "from_pool",
                 "to_pool", "amount", "confidence", "reasoning", "recheck_agrees",
                 "hold_reason", "tx_hash", "snapshot_json", "guardrails_json")
-        with self._lock, self._conn:
-            self._conn.execute(
-                f"INSERT OR REPLACE INTO cycles({','.join(cols)}) "
-                f"VALUES({','.join('?' for _ in cols)})",
-                tuple(record.get(c) for c in cols),
-            )
+        values = {c: record.get(c) for c in cols}
+        with self._lock, self._engine.begin() as conn:
+            self._upsert(conn, cycles_t, values, ["id"])
 
     def feed(self, limit: int = 50, offset: int = 0,
              outcome: Optional[str] = None) -> list[dict[str, Any]]:
-        q = "SELECT * FROM cycles"
-        params: list[Any] = []
+        stmt = select(cycles_t)
         if outcome:
-            q += " WHERE outcome = ?"
-            params.append(outcome)
-        q += " ORDER BY started_at DESC LIMIT ? OFFSET ?"
-        params += [limit, offset]
-        with self._lock:
-            rows = self._conn.execute(q, params).fetchall()
+            stmt = stmt.where(cycles_t.c.outcome == outcome)
+        stmt = stmt.order_by(cycles_t.c.started_at.desc()).limit(limit).offset(offset)
+        with self._engine.connect() as conn:
+            rows = conn.execute(stmt).mappings().all()
         return [self._row_to_dict(r) for r in rows]
 
     def count_cycles(self, outcome: Optional[str] = None) -> int:
-        q = "SELECT COUNT(*) AS c FROM cycles"
-        params: list[Any] = []
+        stmt = select(func.count()).select_from(cycles_t)
         if outcome:
-            q += " WHERE outcome = ?"
-            params.append(outcome)
-        with self._lock:
-            return self._conn.execute(q, params).fetchone()["c"]
+            stmt = stmt.where(cycles_t.c.outcome == outcome)
+        with self._engine.connect() as conn:
+            return int(conn.execute(stmt).scalar() or 0)
 
     def last_reallocation_time(self) -> Optional[float]:
-        with self._lock:
-            row = self._conn.execute(
-                "SELECT MAX(finished_at) AS t FROM cycles WHERE outcome = 'EXECUTED'"
-            ).fetchone()
-        return row["t"] if row and row["t"] is not None else None
+        stmt = select(func.max(cycles_t.c.finished_at)).where(
+            cycles_t.c.outcome == "EXECUTED")
+        with self._engine.connect() as conn:
+            val = conn.execute(stmt).scalar()
+        return float(val) if val is not None else None
 
     def guardrail_trigger_counts(self) -> dict[str, int]:
-        """Count blocked cycles by the guardrail that blocked them."""
+        stmt = select(cycles_t.c.guardrails_json).where(cycles_t.c.outcome == "BLOCKED")
+        with self._engine.connect() as conn:
+            rows = conn.execute(stmt).all()
         counts: dict[str, int] = {}
-        with self._lock:
-            rows = self._conn.execute(
-                "SELECT guardrails_json FROM cycles WHERE outcome = 'BLOCKED'"
-            ).fetchall()
-        for r in rows:
-            for g in json.loads(r["guardrails_json"] or "[]"):
+        for (gj,) in rows:
+            for g in json.loads(gj or "[]"):
                 if not g.get("passed", True):
                     counts[g["name"]] = counts.get(g["name"], 0) + 1
         return counts
 
     @staticmethod
-    def _row_to_dict(r: sqlite3.Row) -> dict[str, Any]:
+    def _row_to_dict(r) -> dict[str, Any]:
         d = dict(r)
         d["snapshot"] = json.loads(d.pop("snapshot_json") or "null")
         d["guardrails"] = json.loads(d.pop("guardrails_json") or "[]")
@@ -133,26 +160,22 @@ class Store:
 
     # -- allocations -------------------------------------------------------
     def get_allocations(self) -> dict[str, float]:
-        with self._lock:
-            rows = self._conn.execute("SELECT pool_id, amount FROM allocations").fetchall()
-        return {r["pool_id"]: r["amount"] for r in rows}
+        with self._engine.connect() as conn:
+            rows = conn.execute(select(allocations_t.c.pool_id,
+                                       allocations_t.c.amount)).all()
+        return {pid: amt for pid, amt in rows}
 
     def set_allocation(self, pool_id: str, amount: float) -> None:
-        """Reconcile the cached allocation for a pool to an authoritative
-        (on-chain) value."""
-        with self._lock, self._conn:
-            self._conn.execute(
-                "INSERT OR REPLACE INTO allocations(pool_id, amount) VALUES(?,?)",
-                (pool_id, amount))
+        with self._lock, self._engine.begin() as conn:
+            self._upsert(conn, allocations_t,
+                         {"pool_id": pool_id, "amount": amount}, ["pool_id"])
 
     def apply_reallocation(self, from_pool: str, to_pool: str, amount: float) -> None:
-        with self._lock, self._conn:
-            self._conn.execute(
-                "UPDATE allocations SET amount = amount - ? WHERE pool_id = ?",
-                (amount, from_pool))
-            self._conn.execute(
-                "UPDATE allocations SET amount = amount + ? WHERE pool_id = ?",
-                (amount, to_pool))
+        with self._lock, self._engine.begin() as conn:
+            conn.execute(update(allocations_t).where(allocations_t.c.pool_id == from_pool)
+                         .values(amount=allocations_t.c.amount - amount))
+            conn.execute(update(allocations_t).where(allocations_t.c.pool_id == to_pool)
+                         .values(amount=allocations_t.c.amount + amount))
 
     # -- policy & run-state (kv) ------------------------------------------
     def get_policy(self) -> Policy:
@@ -182,14 +205,13 @@ class Store:
         self._kv_set("next_cycle_at", str(ts))
 
     def _kv_get(self, key: str) -> Optional[str]:
-        with self._lock:
-            row = self._conn.execute("SELECT value FROM kv WHERE key = ?", (key,)).fetchone()
-        return row["value"] if row else None
+        with self._engine.connect() as conn:
+            row = conn.execute(select(kv_t.c.value).where(kv_t.c.key == key)).first()
+        return row[0] if row else None
 
     def _kv_set(self, key: str, value: str) -> None:
-        with self._lock, self._conn:
-            self._conn.execute(
-                "INSERT OR REPLACE INTO kv(key, value) VALUES(?, ?)", (key, value))
+        with self._lock, self._engine.begin() as conn:
+            self._upsert(conn, kv_t, {"key": key, "value": value}, ["key"])
 
 
 _default: Optional[Store] = None

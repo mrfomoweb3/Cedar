@@ -49,6 +49,11 @@ scheduler = Scheduler(_agent, store, interval_seconds=INTERVAL)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    import logging
+    logging.getLogger("cedar").info(
+        "Cedar starting: data_source=%s signer=%s db=%s interval=%ss autostart=%s",
+        os.getenv("CEDAR_DATA_SOURCE", "mock"), os.getenv("CEDAR_SIGNER", "mock"),
+        "postgres" if os.getenv("DATABASE_URL") else "sqlite", INTERVAL, AUTO_START)
     if AUTO_START and not store.is_paused():
         scheduler.start()
     yield
@@ -56,8 +61,30 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Cedar Agent API", version="1.0.0", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"],
-                   allow_headers=["*"])
+# CORS: default open (public read-only demo). Restrict via CEDAR_CORS_ORIGINS
+# (comma-separated) in production if you expose the write endpoints.
+_origins = os.getenv("CEDAR_CORS_ORIGINS", "*")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"] if _origins.strip() == "*" else [o.strip() for o in _origins.split(",")],
+    allow_methods=["*"], allow_headers=["*"])
+
+
+@app.get("/healthz")
+def healthz():
+    """Liveness/readiness probe for the host. Confirms the DB is reachable."""
+    try:
+        cycles = store.count_cycles()
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(503, f"store unavailable: {exc}")
+    return {
+        "ok": True,
+        "db": "postgres" if os.getenv("DATABASE_URL") else "sqlite",
+        "data_source": os.getenv("CEDAR_DATA_SOURCE", "mock"),
+        "signer": os.getenv("CEDAR_SIGNER", "mock"),
+        "paused": store.is_paused(),
+        "total_cycles": cycles,
+    }
 
 
 # --- models ---------------------------------------------------------------
