@@ -92,6 +92,24 @@ curl      localhost:8000/agent/feed              # live reasoning feed
 curl -X POST localhost:8000/agent/pause          # kill switch
 ```
 
+## Frontend (dashboard)
+
+Dark-mode fintech-terminal UI (Vite + React + TS + recharts) built to make the
+agent's autonomy *visible* — the live reasoning feed is the hero, and refusals
+are rendered as prominently as executions. Six screens: Live Dashboard,
+Portfolio, Guardrails & Safety, Audit Log, Policy Settings, Onboarding.
+
+```bash
+# with the API running on :8000
+cd frontend
+npm install
+npm run dev            # http://localhost:5173  (VITE_API_BASE defaults to :8000)
+```
+
+The Dashboard's **Spike APY** / **Bad Data** / **Run Cycle** buttons drive the two
+demo scenarios live on camera. Executed cycles show a copyable tx hash linking to
+the Casper testnet explorer; blocked cycles show the named guardrail that fired.
+
 ## API
 
 | Method | Path | Purpose |
