@@ -4,10 +4,14 @@ Cedar has two deployables: the **backend** (FastAPI + the in-process autonomous
 scheduler) and the **frontend** (static dashboard). Storage is Postgres in the
 cloud (set `DATABASE_URL`) and SQLite locally.
 
+The single-service Docker image also builds and serves the dashboard, so
+Railway/Docker deploys need **no separate frontend** (one URL, no CORS). The
+static-host instructions below are only for splitting them.
+
 > **One hard rule:** run the backend with a **single worker / single instance**.
 > The scheduler is a background thread inside the process; N workers = N
-> autonomous loops all signing transactions. The Dockerfile and `render.yaml`
-> already pin this — don't override it.
+> autonomous loops all signing transactions. `Dockerfile`, `railway.json`, and
+> `render.yaml` already pin this — don't override it.
 
 ## Storage
 
@@ -41,7 +45,45 @@ base64 -i "Account 1_secret_key.pem" | tr -d '\n'   # paste as CASPER_SECRET_KEY
 | `casper` | `casper` | fully live — real on-chain reallocations (needs `CASPER_SECRET_KEY_B64`, spends testnet CSPR) |
 | `mock` | `mock` | offline demo — enables the Spike/Bad-Data buttons |
 
-## Option A — Render (turnkey: DB + API in one blueprint)
+## Option A — Railway (recommended: one service serves API + dashboard)
+
+The Docker image builds the dashboard and serves it from FastAPI, so a **single
+Railway service** hosts everything on one URL — no CORS, no separate frontend
+deploy. Paid Railway keeps the process alive 24/7 (no idle sleep), so the
+autonomous loop actually runs continuously.
+
+1. Push this repo to GitHub.
+2. Railway → **New Project → Deploy from GitHub repo** → pick this repo. It reads
+   [`railway.json`](railway.json) and builds the [`Dockerfile`](Dockerfile)
+   (health-checked at `/healthz`, pinned to 1 replica).
+3. In the project, **New → Database → Add PostgreSQL**.
+4. On the API service → **Variables**, add a reference to the DB and the config:
+   ```
+   DATABASE_URL = ${{Postgres.DATABASE_URL}}
+   CEDAR_DATA_SOURCE = casper
+   CEDAR_SIGNER = mock            # or "casper" for real on-chain actuation
+   CEDAR_AUTOSTART = 1
+   CEDAR_INTERVAL = 300
+   CEDAR_MODEL = claude-sonnet-4-6
+   CASPER_NODE_URL = https://node.testnet.casper.network/rpc
+   CASPER_CHAIN = casper-test
+   VAULT_ROUTER_HASH = hash-dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135
+   CSPR_TRADE_MCP_URL = https://mcp.cspr.trade/mcp
+   CASPER_MCP_URL = https://mcp.testnet.cspr.cloud/mcp
+   X_CASPER_NETWORK = testnet
+   ANTHROPIC_API_KEY = <secret>
+   CSPR_CLOUD_API_KEY = <secret>
+   # only if CEDAR_SIGNER=casper:
+   CASPER_SECRET_KEY_B64 = <base64 of secret_key.pem>
+   ```
+   Railway injects `PORT`; the image binds it automatically.
+5. **Settings → Networking → Generate Domain.** Open it: the dashboard loads and
+   `<domain>/healthz` returns `{"ok": true, "db": "postgres"}`. Done — one URL.
+
+> Keep **1 replica** (railway.json pins it). Horizontal scaling would run
+> multiple autonomous loops all signing transactions.
+
+## Option B — Render (turnkey: DB + API in one blueprint)
 
 1. Push this repo to GitHub.
 2. Render Dashboard → **New → Blueprint** → select the repo. It reads
@@ -54,7 +96,7 @@ base64 -i "Account 1_secret_key.pem" | tr -d '\n'   # paste as CASPER_SECRET_KEY
 > loop**. For genuine 24/7 autonomy use a paid instance, or ping `/healthz`
 > every few minutes from an uptime monitor.
 
-## Option B — Docker anywhere (Fly.io, Railway, a VPS)
+## Option C — Docker anywhere (Fly.io, Railway, a VPS)
 
 ```bash
 docker build -t cedar-api .
@@ -70,9 +112,11 @@ Fly.io: `fly launch` (detects the Dockerfile), `fly postgres create` + `fly post
 (sets `DATABASE_URL`), `fly secrets set ANTHROPIC_API_KEY=… CSPR_CLOUD_API_KEY=…`,
 scale to exactly one machine (`fly scale count 1`).
 
-## Frontend (static)
+## Frontend as a separate static site (optional)
 
-Any static host. Set `VITE_API_BASE` to the deployed API URL at build time.
+Only needed if you *don't* use the single-service image (which already serves the
+dashboard). Any static host; set `VITE_API_BASE` to the deployed API URL at build
+time.
 
 **Netlify** (uses `frontend/netlify.toml`, includes SPA fallback):
 ```bash

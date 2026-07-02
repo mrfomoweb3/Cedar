@@ -254,3 +254,36 @@ def demo(name: str):
         _source.inject_cross_divergence("PoolC", 25.0)
         return {"ok": True, "seeded": "cross-source divergence on PoolC (expect VALIDATION_FAILED)"}
     raise HTTPException(404, f"unknown demo scenario: {name}")
+
+
+# --- static dashboard (optional; single-service deploy) -------------------
+# If a built frontend is present (FRONTEND_DIST, default ./frontend/dist), serve
+# it from this same service so Railway/Fly can host API + dashboard on one URL,
+# no CORS. Registered LAST so it never shadows the /agent/* or /healthz routes.
+# Skipped entirely when the build isn't present (tests, API-only deploys).
+def _mount_frontend() -> None:
+    from fastapi.responses import FileResponse
+    from fastapi.staticfiles import StaticFiles
+
+    dist = os.getenv("FRONTEND_DIST",
+                     os.path.join(os.path.dirname(__file__), "..", "frontend", "dist"))
+    index = os.path.join(dist, "index.html")
+    if not os.path.isfile(index):
+        return
+
+    # Hashed assets and other build files.
+    app.mount("/assets", StaticFiles(directory=os.path.join(dist, "assets")),
+              name="assets")
+
+    @app.get("/{full_path:path}")
+    def spa(full_path: str):
+        # Never intercept API surface (defensive; those routes match first anyway).
+        if full_path.startswith(("agent", "healthz", "assets", "docs", "openapi.json")):
+            raise HTTPException(404, "not found")
+        candidate = os.path.join(dist, full_path)
+        if full_path and os.path.isfile(candidate):
+            return FileResponse(candidate)
+        return FileResponse(index)  # SPA deep-link fallback
+
+
+_mount_frontend()

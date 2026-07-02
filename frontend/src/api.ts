@@ -1,5 +1,7 @@
 // Cedar API client — talks to the FastAPI control plane (api/main.py).
-const BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000';
+// VITE_API_BASE unset (dev) -> localhost:8000; set to "" -> same-origin
+// (when the backend serves the built dashboard); set to a URL -> that host.
+const BASE = import.meta.env.VITE_API_BASE ?? 'http://localhost:8000';
 
 export interface Policy {
   min_apy_delta: number;
