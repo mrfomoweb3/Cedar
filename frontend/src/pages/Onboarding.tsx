@@ -18,7 +18,7 @@ export function Onboarding() {
   const activate = async () => {
     if (!policy) return;
     await api.onboard(policy, wallet ?? undefined);
-    nav('/');
+    nav('/app');
   };
 
   if (!policy) return <div className="empty">loading…</div>;

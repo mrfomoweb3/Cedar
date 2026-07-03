@@ -1,21 +1,21 @@
 import { NavLink } from 'react-router-dom';
 
 const NAV = [
-  { to: '/', label: 'Live Dashboard', ico: '◉', end: true },
-  { to: '/portfolio', label: 'Portfolio', ico: '▤' },
-  { to: '/guardrails', label: 'Guardrails', ico: '⛨' },
-  { to: '/audit', label: 'Audit Log', ico: '☰' },
-  { to: '/settings', label: 'Policy Settings', ico: '⚙' },
-  { to: '/onboarding', label: 'Agent Setup', ico: '✦' },
+  { to: '/app', label: 'Live Dashboard', ico: '◉', end: true },
+  { to: '/app/portfolio', label: 'Portfolio', ico: '▤' },
+  { to: '/app/guardrails', label: 'Guardrails', ico: '⛨' },
+  { to: '/app/audit', label: 'Audit Log', ico: '☰' },
+  { to: '/app/settings', label: 'Policy Settings', ico: '⚙' },
+  { to: '/app/onboarding', label: 'Agent Setup', ico: '✦' },
 ];
 
 export function Sidebar() {
   return (
     <div className="sidebar">
-      <div className="brand">
+      <NavLink to="/" className="brand" style={{ textDecoration: 'none' }}>
         <span className="brand-mark">C</span>
         Cedar
-      </div>
+      </NavLink>
       <nav className="stack" style={{ gap: 4 }}>
         {NAV.map((n) => (
           <NavLink key={n.to} to={n.to} end={n.end}
