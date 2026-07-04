@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import mark from '../assets/cedar-mark.png';
 
 const NAV = [
   { to: '/app', label: 'Live Dashboard', ico: '◉', end: true },
@@ -13,7 +14,7 @@ export function Sidebar() {
   return (
     <div className="sidebar">
       <NavLink to="/" className="brand" style={{ textDecoration: 'none' }}>
-        <span className="brand-mark">C</span>
+        <img src={mark} className="brand-mark-img" alt="" aria-hidden="true" />
         Cedar
       </NavLink>
       <nav className="stack" style={{ gap: 4 }}>

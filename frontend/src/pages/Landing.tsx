@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
+import mark from '../assets/cedar-mark.png';
 import '../landing.css';
 
 const CONTRACT = 'dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135';
@@ -40,7 +41,7 @@ export function Landing() {
     <div className="lp">
       {/* nav */}
       <header className="lp-nav">
-        <div className="lp-brand"><span className="brand-mark">C</span> Cedar</div>
+        <div className="lp-brand"><img src={mark} className="brand-mark-img" alt="" aria-hidden="true" /> Cedar</div>
         <nav className="lp-nav-links">
           <a href="#loop">How it works</a>
           <a href="#safety">Safety</a>
@@ -177,7 +178,7 @@ export function Landing() {
       </section>
 
       <footer className="lp-footer">
-        <div className="lp-brand"><span className="brand-mark">C</span> Cedar</div>
+        <div className="lp-brand"><img src={mark} className="brand-mark-img" alt="" aria-hidden="true" /> Cedar</div>
         <div className="lp-foot-links">
           <a href={EXPLORER} target="_blank" rel="noreferrer">Testnet contract</a>
           <Link to="/app">Dashboard</Link>

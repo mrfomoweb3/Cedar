@@ -72,6 +72,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   width: 26px; height: 26px; border-radius: 8px; background: var(--accent);
   display: grid; place-items: center; font-size: 14px; color: #fff; font-weight: 700;
 }
+.brand-mark-img { height: 30px; width: auto; display: block; }
 .nav-item {
   display: flex; align-items: center; gap: 12px; padding: 10px 12px;
   border-radius: var(--radius); color: var(--text-2); font-weight: 500;
