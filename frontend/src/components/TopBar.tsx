@@ -1,11 +1,10 @@
 import { api } from '../api';
-import { fmtCountdown, fmtNum } from '../format';
+import { fmtCountdown } from '../format';
 import { usePoll } from '../hooks';
 import { StatusChip } from './StatusChip';
 
 export function TopBar() {
   const { data: status, refresh } = usePoll(api.status, 1000);
-  const { data: portfolio } = usePoll(api.portfolio, 3000);
 
   const paused = status?.paused ?? false;
 
@@ -31,10 +30,6 @@ export function TopBar() {
         <button className={`btn ${paused ? 'btn-primary' : 'btn-danger'}`} onClick={toggle}>
           {paused ? '▶ Resume Agent' : '⏸ Pause Agent'}
         </button>
-        <div className="right">
-          <div className="metric-sm muted" style={{ fontFamily: 'var(--sans)' }}>Portfolio Value</div>
-          <div className="metric-lg">{fmtNum(portfolio?.total_value)} <span className="metric-sm">CSPR</span></div>
-        </div>
       </div>
     </div>
   );

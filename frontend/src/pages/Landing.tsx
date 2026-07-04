@@ -6,7 +6,6 @@ import '../landing.css';
 
 const CONTRACT = 'dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135';
 const EXPLORER = `https://testnet.cspr.live/contract-package/${CONTRACT}`;
-const REPO = 'https://github.com';
 
 const LOOP = [
   { k: 'OBSERVE', d: 'Pull live pool yields + on-chain state from Casper MCP and CSPR.trade.' },
@@ -201,11 +200,6 @@ export function Landing() {
 
       <footer className="lp-footer">
         <div className="lp-brand"><img src={mark} className="brand-mark-img" alt="" aria-hidden="true" /> Cedar</div>
-        <div className="lp-foot-links">
-          <a href={EXPLORER} target="_blank" rel="noreferrer">Testnet contract</a>
-          <Link to="/app">Dashboard</Link>
-          <a href={REPO} target="_blank" rel="noreferrer">Code</a>
-        </div>
         <div className="lp-foot-note">
           <span className="chip testnet">CASPER TESTNET</span>
           <span className="muted">Built for the Casper Agentic Buildathon 2026</span>
