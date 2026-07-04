@@ -56,13 +56,11 @@ export function Landing() {
         <div className="lp-grid-bg" />
         <span className="lp-chip">LIVE ON CASPER TESTNET</span>
         <h1 className="lp-h1">
-          An autonomous agent that moves capital — and knows{' '}
-          <span className="lp-grad">when to refuse.</span>
+          Autonomous capital movement,<br />with a built-in <span className="lp-grad">“no.”</span>
         </h1>
         <p className="lp-sub">
-          Cedar watches DeFi yields on Casper, reasons with Claude, and signs its own
-          on-chain reallocations. No human clicks “confirm.” Every action passes a
-          defense-in-depth safety pipeline — and every refusal is logged.
+          Cedar watches Casper yields and signs its own reallocations, no human in the loop.
+          Every action clears a safety pipeline; every refusal is logged.
         </p>
         <div className="lp-cta-row">
           <Link to="/app" className="lp-btn lp-btn-primary lp-btn-lg">Launch the live agent →</Link>
@@ -77,9 +75,16 @@ export function Landing() {
         </div>
       </section>
 
-      {/* stack strip */}
-      <div className="lp-strip">
-        {STACK.map((s) => <span key={s} className="lp-strip-item">{s}</span>)}
+      {/* ecosystem marquee */}
+      <div className="lp-marquee" aria-label="Built on">
+        <div className="lp-marquee-track">
+          {[...STACK, ...STACK].map((s, i) => (
+            <span className="lp-marquee-item" key={i}>
+              <img src={mark} className="lp-marquee-mark" alt="" aria-hidden="true" />
+              {s}
+            </span>
+          ))}
+        </div>
       </div>
 
       {/* loop */}
@@ -90,12 +95,16 @@ export function Landing() {
           Safety comes from the pipeline, not from a human in the way. Each cycle runs
           end to end and either acts or refuses — always logged.
         </p>
-        <div className="lp-loop">
+        <div className="lp-stack">
           {LOOP.map((s, i) => (
-            <div className="lp-loop-card" key={s.k}>
-              <div className="lp-loop-i">{String(i + 1).padStart(2, '0')}</div>
-              <div className="lp-loop-k">{s.k}</div>
-              <div className="lp-loop-d">{s.d}</div>
+            <div className="lp-stack-card" key={s.k}
+              style={{ top: `${104 + i * 16}px`, zIndex: i + 1 }}>
+              <div className="lp-stack-i">{String(i + 1).padStart(2, '0')}</div>
+              <div>
+                <div className="lp-stack-k">{s.k}</div>
+                <div className="lp-stack-d">{s.d}</div>
+              </div>
+              <div className="lp-stack-step">Step {i + 1} / {LOOP.length}</div>
             </div>
           ))}
         </div>

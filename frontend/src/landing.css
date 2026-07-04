@@ -8,15 +8,17 @@
 /* nav */
 .lp-nav {
   position: sticky; top: 0; z-index: 20;
-  display: flex; align-items: center; gap: 24px; padding: 18px 40px;
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 24px;
+  padding: 18px 40px;
   background: rgba(255,255,255,0.82); backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
 }
-.lp-brand { display: flex; align-items: center; gap: 11px; font-weight: 700; font-size: 19px;
-  letter-spacing: -0.02em; color: var(--text); }
-.lp-nav-links { display: flex; gap: 28px; margin-left: 22px; flex: 1; }
+.lp-brand { justify-self: start; display: flex; align-items: center; gap: 11px; font-weight: 700;
+  font-size: 19px; letter-spacing: -0.02em; color: var(--text); }
+.lp-nav-links { justify-self: center; display: flex; gap: 30px; }
 .lp-nav-links a { color: var(--text-2); font-size: 14px; font-weight: 500; }
 .lp-nav-links a:hover { color: var(--text); }
+.lp-nav > .lp-btn { justify-self: end; }
 
 .lp-btn {
   display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px;
@@ -75,12 +77,32 @@
 .lp-pc-n.green { color: var(--accent); }
 .lp-pc-l { color: var(--text-2); font-size: 13.5px; margin-top: 2px; }
 
-/* stack strip */
-.lp-strip {
-  display: flex; flex-wrap: wrap; gap: 12px 34px; justify-content: center;
-  padding: 40px 24px; border-bottom: 1px solid var(--border);
+/* ecosystem marquee — seamless, smooth, left→right */
+.lp-marquee {
+  overflow: hidden; padding: 26px 0;
+  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  background: var(--bg);
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent);
 }
-.lp-strip-item { color: var(--text-3); font-size: 14px; font-weight: 600; letter-spacing: 0.01em; }
+.lp-marquee-track {
+  display: flex; width: max-content; align-items: center;
+  animation: marquee-right 36s linear infinite; will-change: transform;
+}
+.lp-marquee:hover .lp-marquee-track { animation-play-state: paused; }
+.lp-marquee-item {
+  display: inline-flex; align-items: center; gap: 13px; padding: 0 34px;
+  color: var(--text-2); font-weight: 600; font-size: 15.5px; letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.lp-marquee-mark { height: 22px; width: auto; opacity: .8; }
+@keyframes marquee-right {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-marquee-track { animation: none; }
+}
 
 /* sections */
 .lp-section { max-width: 1080px; margin: 0 auto; padding: 84px 32px; }
@@ -92,14 +114,27 @@
   line-height: 1.12; margin-bottom: 14px; }
 .lp-lead { color: var(--text-2); font-size: 16.5px; line-height: 1.6; max-width: 64ch; margin-bottom: 40px; }
 
-/* loop cards */
-.lp-loop { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.lp-loop-card { background: var(--elevated); border: 1px solid var(--border); border-radius: 16px;
-  padding: 22px; box-shadow: var(--shadow-sm); }
-.lp-loop-i { font-size: 13px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums;
-  margin-bottom: 12px; }
-.lp-loop-k { font-weight: 700; font-size: 15px; letter-spacing: 0.02em; margin-bottom: 8px; }
-.lp-loop-d { color: var(--text-2); font-size: 14px; line-height: 1.55; }
+/* loop — sticky "lapping" stack cards on scroll */
+.lp-stack { position: relative; padding-bottom: 40vh; }
+.lp-stack-card {
+  position: sticky;
+  display: flex; align-items: center; gap: 32px;
+  background: var(--elevated); border: 1px solid var(--border); border-radius: 22px;
+  padding: 40px 44px; box-shadow: var(--shadow); margin-bottom: 26px; min-height: 172px;
+}
+.lp-stack-i {
+  flex-shrink: 0; font-size: 15px; font-weight: 700; color: var(--accent);
+  font-variant-numeric: tabular-nums; width: 58px; height: 58px; border-radius: 14px;
+  background: var(--accent-050); display: grid; place-items: center; letter-spacing: 0.02em;
+}
+.lp-stack-k { font-weight: 700; font-size: 22px; letter-spacing: -0.01em; margin-bottom: 8px; }
+.lp-stack-d { color: var(--text-2); font-size: 16px; line-height: 1.55; max-width: 62ch; }
+.lp-stack-step { margin-left: auto; align-self: flex-start; color: var(--text-3); font-size: 13px;
+  font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
+@media (max-width: 640px) {
+  .lp-stack-card { flex-direction: column; align-items: flex-start; gap: 18px; padding: 28px; }
+  .lp-stack-step { display: none; }
+}
 
 /* safety grid */
 .lp-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
