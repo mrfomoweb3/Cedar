@@ -24,6 +24,16 @@ const SAFETY = [
   { t: 'Honest provenance', d: 'Single-source data is surfaced as UNVERIFIED, never silently trusted. The agent tells you when it is flying with one eye.' },
 ];
 
+// soft, harmonious card tints derived from the brand hues (green/amber/slate)
+const LOOP_COLORS = [
+  { bg: '#EAF3EC', fg: '#1A5C2E' }, // forest green
+  { bg: '#FAF2E7', fg: '#B4763A' }, // warm sand / amber
+  { bg: '#ECF1F6', fg: '#3E6D8E' }, // slate blue
+  { bg: '#F7EFE9', fg: '#BC6A4A' }, // terracotta
+  { bg: '#EDF3E9', fg: '#5E7A45' }, // sage / olive
+  { bg: '#EFF1F4', fg: '#55617A' }, // cool gray
+];
+
 export function Landing() {
   const [cycles, setCycles] = useState<number | null>(null);
   const [blocks, setBlocks] = useState<number | null>(null);
@@ -94,17 +104,22 @@ export function Landing() {
           end to end and either acts or refuses — always logged.
         </p>
         <div className="lp-stack">
-          {LOOP.map((s, i) => (
-            <div className="lp-stack-card" key={s.k}
-              style={{ top: `${104 + i * 16}px`, zIndex: i + 1 }}>
-              <div className="lp-stack-i">{String(i + 1).padStart(2, '0')}</div>
-              <div>
-                <div className="lp-stack-k">{s.k}</div>
-                <div className="lp-stack-d">{s.d}</div>
+          {LOOP.map((s, i) => {
+            const c = LOOP_COLORS[i % LOOP_COLORS.length];
+            return (
+              <div className="lp-stack-card" key={s.k}
+                style={{ top: `${104 + i * 16}px`, zIndex: i + 1, background: c.bg }}>
+                <div className="lp-stack-top">
+                  <div className="lp-stack-i" style={{ color: c.fg }}>{String(i + 1).padStart(2, '0')}</div>
+                  <div className="lp-stack-step">Step {i + 1} / {LOOP.length}</div>
+                </div>
+                <div>
+                  <div className="lp-stack-k" style={{ color: c.fg }}>{s.k}</div>
+                  <div className="lp-stack-d">{s.d}</div>
+                </div>
               </div>
-              <div className="lp-stack-step">Step {i + 1} / {LOOP.length}</div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </section>
 

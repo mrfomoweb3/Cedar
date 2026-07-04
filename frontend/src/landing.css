@@ -118,26 +118,29 @@
   line-height: 1.12; margin-bottom: 14px; }
 .lp-lead { color: var(--text-2); font-size: 16.5px; line-height: 1.6; max-width: 64ch; margin-bottom: 40px; }
 
-/* loop — sticky "lapping" stack cards on scroll */
-.lp-stack { position: relative; padding-bottom: 40vh; }
+/* loop — square, colored, sticky "lapping" stack cards on scroll */
+.lp-stack { position: relative; padding-bottom: 42vh; }
 .lp-stack-card {
   position: sticky;
-  display: flex; align-items: center; gap: 32px;
-  background: var(--elevated); border: 1px solid var(--border); border-radius: 22px;
-  padding: 40px 44px; box-shadow: var(--shadow); margin-bottom: 26px; min-height: 172px;
+  width: 460px; max-width: 92vw; aspect-ratio: 1 / 1;
+  margin: 0 auto 28px;
+  display: flex; flex-direction: column; justify-content: space-between;
+  border: 1px solid rgba(20,20,20,0.06); border-radius: 26px;
+  padding: 38px; box-shadow: var(--shadow);
 }
+.lp-stack-top { display: flex; align-items: center; justify-content: space-between; }
 .lp-stack-i {
-  flex-shrink: 0; font-size: 15px; font-weight: 700; color: var(--accent);
-  font-variant-numeric: tabular-nums; width: 58px; height: 58px; border-radius: 14px;
-  background: var(--accent-050); display: grid; place-items: center; letter-spacing: 0.02em;
+  font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums;
+  width: 56px; height: 56px; border-radius: 15px; background: #fff;
+  display: grid; place-items: center; letter-spacing: 0.02em;
+  box-shadow: 0 1px 2px rgba(16,24,40,.06);
 }
-.lp-stack-k { font-weight: 700; font-size: 22px; letter-spacing: -0.01em; margin-bottom: 8px; }
-.lp-stack-d { color: var(--text-2); font-size: 16px; line-height: 1.55; max-width: 62ch; }
-.lp-stack-step { margin-left: auto; align-self: flex-start; color: var(--text-3); font-size: 13px;
-  font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; }
-@media (max-width: 640px) {
-  .lp-stack-card { flex-direction: column; align-items: flex-start; gap: 18px; padding: 28px; }
-  .lp-stack-step { display: none; }
+.lp-stack-k { font-weight: 700; font-size: 26px; letter-spacing: -0.02em; margin-bottom: 12px; }
+.lp-stack-d { color: var(--text-2); font-size: 16.5px; line-height: 1.55; }
+.lp-stack-step { color: var(--text-3); font-size: 12.5px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase; }
+@media (max-width: 520px) {
+  .lp-stack-card { aspect-ratio: auto; min-height: 340px; padding: 28px; }
 }
 
 /* safety grid */
