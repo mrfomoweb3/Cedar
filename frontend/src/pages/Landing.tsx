@@ -24,8 +24,6 @@ const SAFETY = [
   { t: 'Honest provenance', d: 'Single-source data is surfaced as UNVERIFIED, never silently trusted. The agent tells you when it is flying with one eye.' },
 ];
 
-const STACK = ['Casper', 'Claude (Anthropic)', 'Odra', 'LangGraph', 'CSPR.trade', 'cspr.cloud'];
-
 export function Landing() {
   const [cycles, setCycles] = useState<number | null>(null);
   const [blocks, setBlocks] = useState<number | null>(null);
@@ -54,7 +52,6 @@ export function Landing() {
       {/* hero */}
       <section className="lp-hero">
         <div className="lp-grid-bg" />
-        <span className="lp-chip">LIVE ON CASPER TESTNET</span>
         <h1 className="lp-h1">
           Autonomous capital movement,<br />with a built-in <span className="lp-grad">“no.”</span>
         </h1>
@@ -75,13 +72,14 @@ export function Landing() {
         </div>
       </section>
 
-      {/* ecosystem marquee */}
-      <div className="lp-marquee" aria-label="Built on">
+      {/* brand marquee — real logo + wordmark, repeating */}
+      <div className="lp-marquee" aria-label="Cedar">
         <div className="lp-marquee-track">
-          {[...STACK, ...STACK].map((s, i) => (
+          {Array.from({ length: 16 }).map((_, i) => (
             <span className="lp-marquee-item" key={i}>
               <img src={mark} className="lp-marquee-mark" alt="" aria-hidden="true" />
-              {s}
+              <span className="lp-marquee-word">Cedar</span>
+              <span className="lp-marquee-dot" aria-hidden="true" />
             </span>
           ))}
         </div>
@@ -125,7 +123,7 @@ export function Landing() {
       </section>
 
       {/* live proof */}
-      <section id="proof" className="lp-section">
+      <section id="proof" className="lp-section lp-center">
         <div className="lp-eyebrow">Not a mock</div>
         <h2 className="lp-h2">Real reasoning. Real transactions.</h2>
         <p className="lp-lead">
@@ -180,7 +178,7 @@ export function Landing() {
       </section>
 
       {/* cta band */}
-      <section className="lp-band">
+      <section className="lp-band lp-center">
         <h2 className="lp-h2" style={{ marginBottom: 12 }}>See an agent you can actually trust.</h2>
         <p className="lp-lead" style={{ marginBottom: 24 }}>A human sets the goal, then steps back.</p>
         <Link to="/app" className="lp-btn lp-btn-primary lp-btn-lg">Launch Cedar →</Link>

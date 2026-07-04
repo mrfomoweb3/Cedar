@@ -91,11 +91,15 @@
 }
 .lp-marquee:hover .lp-marquee-track { animation-play-state: paused; }
 .lp-marquee-item {
-  display: inline-flex; align-items: center; gap: 13px; padding: 0 34px;
-  color: var(--text-2); font-weight: 600; font-size: 15.5px; letter-spacing: -0.01em;
+  display: inline-flex; align-items: center; gap: 14px; padding: 0 12px 0 26px;
   white-space: nowrap;
 }
-.lp-marquee-mark { height: 22px; width: auto; opacity: .8; }
+.lp-marquee-mark { height: 30px; width: auto; }
+.lp-marquee-word {
+  font-weight: 700; font-size: 26px; letter-spacing: -0.03em; color: var(--text);
+}
+.lp-marquee-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+  opacity: .55; margin-left: 26px; }
 @keyframes marquee-right {
   from { transform: translateX(-50%); }
   to   { transform: translateX(0); }
@@ -144,6 +148,11 @@
 .lp-card-t::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 2px;
   background: var(--accent); margin-right: 10px; vertical-align: middle; }
 .lp-card-d { color: var(--text-2); font-size: 14.5px; line-height: 1.6; }
+
+/* centered section variant */
+.lp-center { text-align: center; }
+.lp-center .lp-lead { margin-left: auto; margin-right: auto; }
+.lp-center .lp-proof { margin-left: auto; margin-right: auto; text-align: left; }
 
 /* proof */
 .lp-proof { border: 1px solid var(--border); border-radius: 16px; overflow: hidden; background: var(--elevated);
