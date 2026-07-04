@@ -27,7 +27,7 @@ not from a human clicking "yes":
 2. **VALIDATE** — the bad-data guardrail. Range-checks APYs (a 9000% reading is bad
    data, not a jackpot), rejects stale snapshots, and **halts on cross-source
    divergence rather than averaging**.
-3. **REASON** — a schema-constrained Claude call that sees *only* the validated
+3. **REASON** — a schema-constrained LLM call (Llama 3.3 on Groq by default; Claude optional) that sees *only* the validated
    snapshot + policy. Its JSON output is then hard-checked in code: unknown pools,
    over-cap amounts, and fabricated figures all force a HOLD. No second LLM call.
 4. **RECHECK** — a deterministic, non-LLM re-derivation of the same decision. If the
@@ -78,9 +78,9 @@ cp .env.example .env
 uvicorn api.main:app --reload
 ```
 
-With no `ANTHROPIC_API_KEY` set, the REASON node transparently falls back to the
+With no `GROQ_API_KEY` set, the REASON node transparently falls back to the
 deterministic engine so the whole loop runs offline. Set the key (and
-`CEDAR_MODEL`) to put Claude in the loop; the code-side output guards apply either
+`CEDAR_MODEL`) to put a real model in the loop; the code-side output guards apply either
 way.
 
 ### Demo controls

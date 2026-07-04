@@ -28,7 +28,7 @@ Provide as host env vars:
 
 | Var | Needed when | Notes |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | Claude reasoning | else falls back to the deterministic engine |
+| `GROQ_API_KEY` | LLM reasoning (Groq, default) | else falls back to the deterministic engine |
 | `CSPR_CLOUD_API_KEY` | Casper MCP 2nd source | from cspr.cloud |
 | `CASPER_SECRET_KEY_B64` | `CEDAR_SIGNER=casper` | base64 of `secret_key.pem`; decoded to a file at startup by `agent/config.py` |
 
@@ -41,7 +41,7 @@ base64 -i "Account 1_secret_key.pem" | tr -d '\n'   # paste as CASPER_SECRET_KEY
 
 | `CEDAR_DATA_SOURCE` | `CEDAR_SIGNER` | Behaviour |
 |---|---|---|
-| `casper` | `mock` | **recommended public default** — real MCP reads + Claude, simulated actuation (no CSPR spent, no key needed) |
+| `casper` | `mock` | **recommended public default** — real MCP reads + LLM reasoning, simulated actuation (no CSPR spent, no signing key needed) |
 | `casper` | `casper` | fully live — real on-chain reallocations (needs `CASPER_SECRET_KEY_B64`, spends testnet CSPR) |
 | `mock` | `mock` | offline demo — enables the Spike/Bad-Data buttons |
 
@@ -64,14 +64,15 @@ autonomous loop actually runs continuously.
    CEDAR_SIGNER = mock            # or "casper" for real on-chain actuation
    CEDAR_AUTOSTART = 1
    CEDAR_INTERVAL = 300
-   CEDAR_MODEL = claude-sonnet-4-6
+   CEDAR_LLM_PROVIDER = groq
+   CEDAR_MODEL = llama-3.3-70b-versatile
    CASPER_NODE_URL = https://node.testnet.casper.network/rpc
    CASPER_CHAIN = casper-test
    VAULT_ROUTER_HASH = hash-dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135
    CSPR_TRADE_MCP_URL = https://mcp.cspr.trade/mcp
    CASPER_MCP_URL = https://mcp.testnet.cspr.cloud/mcp
    X_CASPER_NETWORK = testnet
-   ANTHROPIC_API_KEY = <secret>
+   GROQ_API_KEY = <secret>   # console.groq.com
    CSPR_CLOUD_API_KEY = <secret>
    # only if CEDAR_SIGNER=casper:
    CASPER_SECRET_KEY_B64 = <base64 of secret_key.pem>
@@ -88,7 +89,7 @@ autonomous loop actually runs continuously.
 1. Push this repo to GitHub.
 2. Render Dashboard → **New → Blueprint** → select the repo. It reads
    [`render.yaml`](render.yaml): provisions Postgres + the API (Docker, health-checked).
-3. Set the secret env vars (`ANTHROPIC_API_KEY`, `CSPR_CLOUD_API_KEY`, and
+3. Set the secret env vars (`GROQ_API_KEY`, `CSPR_CLOUD_API_KEY`, and
    `CASPER_SECRET_KEY_B64` if actuating) in the service's Environment tab.
 4. API comes up at `https://cedar-api.onrender.com` — check `/healthz`.
 
@@ -103,13 +104,13 @@ docker build -t cedar-api .
 docker run -p 8000:8000 \
   -e DATABASE_URL="postgresql://user:pass@host:5432/cedar" \
   -e CEDAR_DATA_SOURCE=casper -e CEDAR_SIGNER=mock \
-  -e ANTHROPIC_API_KEY=... -e CSPR_CLOUD_API_KEY=... \
+  -e GROQ_API_KEY=... -e CSPR_CLOUD_API_KEY=... \
   -e VAULT_ROUTER_HASH=hash-dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135 \
   cedar-api
 ```
 
 Fly.io: `fly launch` (detects the Dockerfile), `fly postgres create` + `fly postgres attach`
-(sets `DATABASE_URL`), `fly secrets set ANTHROPIC_API_KEY=… CSPR_CLOUD_API_KEY=…`,
+(sets `DATABASE_URL`), `fly secrets set GROQ_API_KEY=… CSPR_CLOUD_API_KEY=…`,
 scale to exactly one machine (`fly scale count 1`).
 
 ## Frontend as a separate static site (optional)

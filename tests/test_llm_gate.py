@@ -17,7 +17,8 @@ def _validated(apy_a, apy_b, apy_c):
 
 
 def test_gate_skips_llm_on_clear_hold(monkeypatch):
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.setenv("GROQ_API_KEY", "test-key")
+    monkeypatch.setattr(reason_mod, "PROVIDER", "groq")
     monkeypatch.setattr(reason_mod, "LLM_GATE", True)
 
     def boom(*a, **k):
@@ -33,7 +34,8 @@ def test_gate_skips_llm_on_clear_hold(monkeypatch):
 
 
 def test_gate_calls_llm_when_actionable(monkeypatch):
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    monkeypatch.setenv("GROQ_API_KEY", "test-key")
+    monkeypatch.setattr(reason_mod, "PROVIDER", "groq")
     monkeypatch.setattr(reason_mod, "LLM_GATE", True)
     called = {}
 

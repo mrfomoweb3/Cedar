@@ -19,13 +19,25 @@ from ..decision import deterministic_decision
 from ..types import (Action, AgentDecision, CycleState, Policy,
                      ValidatedSnapshot)
 
-# Cost posture: Haiku 4.5 ($1/$5 per MTok) is ~3x cheaper than Sonnet and well
-# suited to this small structured-JSON decision. Override via CEDAR_MODEL.
 log = logging.getLogger("cedar.reason")
 
-MODEL = os.getenv("CEDAR_MODEL", "claude-haiku-4-5")
+# Reasoning provider. Groq (OpenAI-compatible, open Llama models) is the default:
+# fast and very cheap, which suits this small structured-JSON decision. Set
+# CEDAR_LLM_PROVIDER=anthropic (+ ANTHROPIC_API_KEY) to use Claude instead.
+PROVIDER = os.getenv("CEDAR_LLM_PROVIDER", "groq").lower()
+_DEFAULT_MODEL = {
+    "groq": "llama-3.3-70b-versatile",   # cheaper still: llama-3.1-8b-instant
+    "anthropic": "claude-haiku-4-5",
+}
+MODEL = os.getenv("CEDAR_MODEL", "") or _DEFAULT_MODEL.get(PROVIDER, "llama-3.3-70b-versatile")
 # Output tokens are the dominant per-call cost; the decision JSON is small.
 MAX_TOKENS = int(os.getenv("CEDAR_MAX_TOKENS", "512"))
+
+
+def _api_key_present() -> bool:
+    """Is the active provider's key configured?"""
+    return bool(os.getenv("GROQ_API_KEY") if PROVIDER == "groq"
+                else os.getenv("ANTHROPIC_API_KEY"))
 # When enabled (default), Claude is only called when the deterministic pre-check
 # sees an actionable reallocation candidate. Clear HOLDs (no APY delta over the
 # policy threshold) skip the LLM entirely -- most cycles, in practice.
@@ -69,7 +81,32 @@ def _snapshot_payload(snap: ValidatedSnapshot, policy: Policy) -> str:
     }, indent=2)
 
 
-def _call_llm(snap: ValidatedSnapshot, policy: Policy) -> AgentDecision:
+def _parse_decision(text: str) -> AgentDecision:
+    text = text.strip()
+    if text.startswith("```"):                       # tolerate code fences
+        text = text.strip("`")
+        text = text[text.find("{"):text.rfind("}") + 1]
+    return AgentDecision.model_validate(json.loads(text))
+
+
+def _call_groq(snap: ValidatedSnapshot, policy: Policy) -> AgentDecision:
+    from groq import Groq
+
+    client = Groq()  # reads GROQ_API_KEY
+    resp = client.chat.completions.create(
+        model=MODEL,
+        max_tokens=MAX_TOKENS,
+        temperature=0,
+        response_format={"type": "json_object"},     # guarantees valid JSON
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": _snapshot_payload(snap, policy)},
+        ],
+    )
+    return _parse_decision(resp.choices[0].message.content or "")
+
+
+def _call_anthropic(snap: ValidatedSnapshot, policy: Policy) -> AgentDecision:
     import anthropic
 
     client = anthropic.Anthropic()
@@ -79,13 +116,14 @@ def _call_llm(snap: ValidatedSnapshot, policy: Policy) -> AgentDecision:
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": _snapshot_payload(snap, policy)}],
     )
-    text = "".join(b.text for b in msg.content if b.type == "text").strip()
-    # tolerate accidental code fences
-    if text.startswith("```"):
-        text = text.strip("`")
-        text = text[text.find("{"):text.rfind("}") + 1]
-    data = json.loads(text)
-    return AgentDecision.model_validate(data)
+    text = "".join(b.text for b in msg.content if b.type == "text")
+    return _parse_decision(text)
+
+
+def _call_llm(snap: ValidatedSnapshot, policy: Policy) -> AgentDecision:
+    if PROVIDER == "anthropic":
+        return _call_anthropic(snap, policy)
+    return _call_groq(snap, policy)
 
 
 def _sanitize(decision: AgentDecision, snap: ValidatedSnapshot,
@@ -175,14 +213,14 @@ def _trace_numbers_grounded(trace: str, snap: ValidatedSnapshot,
 
 def _plain_llm_error(exc: Exception) -> str:
     """One short, human-readable reason for a failed model call."""
-    s = str(exc)
-    if "credit balance is too low" in s:
-        return "the Anthropic account is out of API credits"
-    if "rate_limit" in s or "429" in s:
+    s = str(exc).lower()
+    if "credit" in s or "quota" in s or "billing" in s:
+        return "the reasoning account is out of credits"
+    if "rate_limit" in s or "rate limit" in s or "429" in s:
         return "the API rate limit was hit"
-    if "overloaded" in s or "529" in s:
+    if "overloaded" in s or "503" in s or "529" in s:
         return "the API is temporarily overloaded"
-    if "authentication" in s or "401" in s:
+    if "authentication" in s or "invalid api key" in s or "401" in s:
         return "the API key was rejected"
     return exc.__class__.__name__
 
@@ -199,7 +237,7 @@ def make_reason_node(force_deterministic: bool = False):
         snap = state["validated"]
         policy = state["policy"]
 
-        use_llm = (not force_deterministic) and bool(os.getenv("ANTHROPIC_API_KEY"))
+        use_llm = (not force_deterministic) and _api_key_present()
 
         # Credit-saving gate: if the deterministic engine sees no actionable
         # move, there is nothing for Claude to judge -- skip the API call.

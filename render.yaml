@@ -31,8 +31,10 @@ services:
         value: "1"
       - key: CEDAR_INTERVAL
         value: "300"       # 5 min; real MCP reads + one Claude call per cycle
+      - key: CEDAR_LLM_PROVIDER
+        value: groq
       - key: CEDAR_MODEL
-        value: claude-sonnet-4-6
+        value: llama-3.3-70b-versatile
       # --- chain + MCP endpoints (testnet) ---
       - key: CASPER_NODE_URL
         value: https://node.testnet.casper.network/rpc
@@ -47,7 +49,7 @@ services:
       - key: X_CASPER_NETWORK
         value: testnet
       # --- secrets: set these in the Render dashboard (never committed) ---
-      - key: ANTHROPIC_API_KEY
+      - key: GROQ_API_KEY
         sync: false
       - key: CSPR_CLOUD_API_KEY
         sync: false

@@ -10,7 +10,7 @@ const EXPLORER = `https://testnet.cspr.live/contract-package/${CONTRACT}`;
 const LOOP = [
   { k: 'OBSERVE', d: 'Pull live pool yields + on-chain state from Casper MCP and CSPR.trade.' },
   { k: 'VALIDATE', d: 'Reject bad data — range, staleness, and cross-provider divergence.' },
-  { k: 'REASON', d: 'Claude decides HOLD or REALLOCATE over only the validated snapshot.' },
+  { k: 'REASON', d: 'An LLM (Llama 3.3 on Groq) decides HOLD or REALLOCATE over only the validated snapshot.' },
   { k: 'RECHECK', d: 'A deterministic, non-LLM engine re-derives the call. Disagree → HOLD.' },
   { k: 'GUARDRAILS', d: 'Cooldown, position cap, cost-vs-gain, anomaly. First fail short-circuits.' },
   { k: 'ACTUATE', d: 'Sign + submit the reallocation on Casper. Capture the tx hash.' },
@@ -141,7 +141,7 @@ export function Landing() {
         <div className="lp-eyebrow">Not a mock</div>
         <h2 className="lp-h2">Real reasoning. Real transactions.</h2>
         <p className="lp-lead">
-          The loop reads live market data, reasons with Claude, and submits real deploys
+          The loop reads live market data, reasons with an LLM, and submits real deploys
           to a deployed Odra contract on Casper Testnet — verifiable on the explorer.
         </p>
         <div className="lp-proof">
@@ -167,7 +167,7 @@ export function Landing() {
             <ul>
               <li>Autonomous loop live on Casper Testnet</li>
               <li>Owner-gated VaultRouter, on-chain state read-back</li>
-              <li>Claude reasoning + deterministic recheck + guardrails</li>
+              <li>LLM reasoning + deterministic recheck + guardrails</li>
               <li>Two-provider data cross-check with honest provenance</li>
             </ul>
           </div>
