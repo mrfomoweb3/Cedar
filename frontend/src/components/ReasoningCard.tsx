@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Cycle } from '../api';
-import { fmtNum, fmtTime, outcomeLabel, outcomeVariant, truncHash } from '../format';
+import { fmtNum, fmtTime, outcomeLabel, outcomeVariant, plainReasoning, truncHash } from '../format';
 import { Copy } from './Copy';
 
 const STATE_DOT: Record<string, string> = {
@@ -64,7 +64,7 @@ export function ReasoningCard({ cycle, defaultOpen = false }: { cycle: Cycle; de
           {cycle.reasoning && (
             <div className="rrow" style={{ marginTop: 4 }}>
               <span className="k">Rationale:</span>
-              <span className="v" style={{ color: 'var(--text-2)' }}>{cycle.reasoning}</span>
+              <span className="v" style={{ color: 'var(--text-2)' }}>{plainReasoning(cycle.reasoning)}</span>
             </div>
           )}
           <div className="rrow" style={{ marginTop: 4 }}>

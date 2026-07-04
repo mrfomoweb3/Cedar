@@ -52,11 +52,28 @@ export function outcomeLabel(o: Cycle['outcome']): string {
     VALIDATION_FAILED: 'Halted', EXECUTION_FAILED: 'Exec Failed' }[o] || o;
 }
 
+/** Render a reasoning trace as plain, readable text: strip the machine-oriented
+ *  bracket tags ([DATA: …], [no-api-key->deterministic], [force-HOLD] …) and
+ *  tidy the force-hold "| original:" wrapper. The raw trace stays in the API/CSV. */
+export function plainReasoning(trace: string | null | undefined): string {
+  if (!trace) return '—';
+  let t = trace;
+  // remove any leading [tag] blocks (possibly several)
+  for (let i = 0; i < 4; i++) {
+    const m = t.match(/^\s*\[[^\]]*\]\s*/);
+    if (!m) break;
+    t = t.slice(m[0].length);
+  }
+  t = t.replace(/\|\s*original:\s*/g, ' Original model reasoning: ');
+  t = t.replace(/\s+/g, ' ').trim();
+  return t || '—';
+}
+
 /** Map live agent status string to a chip variant. */
 export function statusVariant(s: string): 'live' | 'hold' | 'blocked' | 'error' {
   const v = s.toLowerCase();
   if (['observing', 'reasoning', 'validating', 'executing'].includes(v)) return 'live';
   if (['blocked'].includes(v)) return 'blocked';
-  if (['error', 'halted'].includes(v)) return 'error';
+  if (['error', 'halted', 'offline'].includes(v)) return 'error';
   return 'hold';
 }

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { api } from '../api';
 import { AllocationDonut } from '../components/AllocationDonut';
@@ -39,7 +39,28 @@ export function Dashboard() {
     });
   }, [cycles]);
 
-  const seed = async (name: 'spike' | 'bad-data') => { await api.demo(name); await api.runOnce(); };
+  // Action buttons: busy state + surfaced errors (demo seeding 400s in real-data
+  // mode; run-once can take ~15s with live MCP reads + a model call).
+  const [busy, setBusy] = useState(false);
+  const [actionMsg, setActionMsg] = useState<string | null>(null);
+
+  const runAction = async (fn: () => Promise<unknown>) => {
+    setBusy(true);
+    setActionMsg(null);
+    try {
+      await fn();
+    } catch (e) {
+      const msg = (e as Error).message ?? 'action failed';
+      setActionMsg(msg.includes('400')
+        ? 'Demo scenarios need mock data mode (CEDAR_DATA_SOURCE=mock).'
+        : `Action failed: ${msg}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const seed = (name: 'spike' | 'bad-data') =>
+    runAction(async () => { await api.demo(name); await api.runOnce(); });
 
   const TILES = [
     { ico: '◎', label: 'Portfolio value', value: `${fmtNum(portfolio?.total_value)}`, unit: 'CSPR',
@@ -81,14 +102,22 @@ export function Dashboard() {
         {/* left column */}
         <div className="stack">
           <div className="card">
-            <div className="flex between" style={{ marginBottom: 6 }}>
+            <div className="flex between" style={{ marginBottom: 6, flexWrap: 'wrap', gap: 10 }}>
               <div className="card-title" style={{ marginBottom: 0 }}>Allocation over time</div>
-              <div className="flex gap">
-                <button className="btn" onClick={() => seed('spike')} title="Seed an APY spike (mock mode)">▲ Spike</button>
-                <button className="btn" onClick={() => seed('bad-data')} title="Seed bad data (mock mode)">⚠ Bad data</button>
-                <button className="btn btn-primary" onClick={() => api.runOnce()}>▶ Run cycle</button>
+              <div className="flex gap" style={{ flexWrap: 'wrap' }}>
+                <button className="btn" disabled={busy} onClick={() => seed('spike')} title="Seed an APY spike (mock mode)">▲ Spike</button>
+                <button className="btn" disabled={busy} onClick={() => seed('bad-data')} title="Seed bad data (mock mode)">⚠ Bad data</button>
+                <button className="btn btn-primary" disabled={busy} onClick={() => runAction(() => api.runOnce())}>
+                  {busy ? '… Running' : '▶ Run cycle'}
+                </button>
               </div>
             </div>
+            {actionMsg && (
+              <div className="banner" style={{ background: 'var(--blocked-050)',
+                borderColor: '#F0DDC4', color: 'var(--blocked)' }}>
+                {actionMsg}
+              </div>
+            )}
             {series.length < 2 ? <div className="empty">gathering cycles…</div> : (
               <ResponsiveContainer width="100%" height={230}>
                 <AreaChart data={series} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>

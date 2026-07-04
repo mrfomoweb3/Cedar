@@ -11,6 +11,7 @@ so the loop still runs offline for demos/tests -- clearly flagged in the trace.
 from __future__ import annotations
 
 import json
+import logging
 import os
 from typing import Optional
 
@@ -18,7 +19,17 @@ from ..decision import deterministic_decision
 from ..types import (Action, AgentDecision, CycleState, Policy,
                      ValidatedSnapshot)
 
-MODEL = os.getenv("CEDAR_MODEL", "claude-sonnet-4-6")
+# Cost posture: Haiku 4.5 ($1/$5 per MTok) is ~3x cheaper than Sonnet and well
+# suited to this small structured-JSON decision. Override via CEDAR_MODEL.
+log = logging.getLogger("cedar.reason")
+
+MODEL = os.getenv("CEDAR_MODEL", "claude-haiku-4-5")
+# Output tokens are the dominant per-call cost; the decision JSON is small.
+MAX_TOKENS = int(os.getenv("CEDAR_MAX_TOKENS", "512"))
+# When enabled (default), Claude is only called when the deterministic pre-check
+# sees an actionable reallocation candidate. Clear HOLDs (no APY delta over the
+# policy threshold) skip the LLM entirely -- most cycles, in practice.
+LLM_GATE = os.getenv("CEDAR_LLM_GATE", "1") == "1"
 
 SYSTEM_PROMPT = """You are a yield-routing decision engine. You will be given:
 1. A validated market snapshot (pool APYs, current allocation, gas estimate)
@@ -26,7 +37,10 @@ SYSTEM_PROMPT = """You are a yield-routing decision engine. You will be given:
 
 You must decide: HOLD or REALLOCATE.
 You may ONLY reference pools and values present in the snapshot provided.
-You must justify your decision citing the specific figures given.
+Justify your decision citing the specific figures given.
+reasoning_trace rules: 2 to 4 short plain-English sentences. No brackets,
+no markdown, no formulas or arrow notation - write it so a non-technical
+reader can follow the decision.
 Respond ONLY in the following JSON schema, nothing else:
 
 {
@@ -61,7 +75,7 @@ def _call_llm(snap: ValidatedSnapshot, policy: Policy) -> AgentDecision:
     client = anthropic.Anthropic()
     msg = client.messages.create(
         model=MODEL,
-        max_tokens=1024,
+        max_tokens=MAX_TOKENS,
         system=SYSTEM_PROMPT,
         messages=[{"role": "user", "content": _snapshot_payload(snap, policy)}],
     )
@@ -159,6 +173,20 @@ def _trace_numbers_grounded(trace: str, snap: ValidatedSnapshot,
     return True
 
 
+def _plain_llm_error(exc: Exception) -> str:
+    """One short, human-readable reason for a failed model call."""
+    s = str(exc)
+    if "credit balance is too low" in s:
+        return "the Anthropic account is out of API credits"
+    if "rate_limit" in s or "429" in s:
+        return "the API rate limit was hit"
+    if "overloaded" in s or "529" in s:
+        return "the API is temporarily overloaded"
+    if "authentication" in s or "401" in s:
+        return "the API key was rejected"
+    return exc.__class__.__name__
+
+
 def _annotate_provenance(decision: AgentDecision, snap: ValidatedSnapshot) -> AgentDecision:
     """Prepend the data-provenance note so single-source/unverified cycles are
     visible in the reasoning trace, never silently passed."""
@@ -172,18 +200,37 @@ def make_reason_node(force_deterministic: bool = False):
         policy = state["policy"]
 
         use_llm = (not force_deterministic) and bool(os.getenv("ANTHROPIC_API_KEY"))
+
+        # Credit-saving gate: if the deterministic engine sees no actionable
+        # move, there is nothing for Claude to judge -- skip the API call.
+        # Claude is consulted only when capital might actually move.
+        if use_llm and LLM_GATE:
+            pre = deterministic_decision(snap, policy)
+            if pre.action == Action.HOLD:
+                pre.reasoning_trace = (
+                    "No pool clears the policy's minimum APY delta, so there is "
+                    "nothing to reallocate this cycle. The model call was skipped "
+                    "to save API credits. " + pre.reasoning_trace)
+                return {"agent_decision": _annotate_provenance(pre, snap)}
+
         if use_llm:
             try:
                 raw = _call_llm(snap, policy)
             except Exception as exc:  # noqa: BLE001  -- never crash the loop on LLM error
+                # Full error goes to the server log; the trace stays plain-English.
+                log.warning("LLM call failed; deterministic engine decided: %s", exc)
+                reason_txt = _plain_llm_error(exc)
                 fallback = deterministic_decision(snap, policy)
                 fallback.reasoning_trace = (
-                    f"[llm-error->deterministic] {exc} | {fallback.reasoning_trace}")
+                    f"The model could not be reached ({reason_txt}), so the "
+                    f"deterministic engine decided this cycle. {fallback.reasoning_trace}")
                 return {"agent_decision": _annotate_provenance(fallback, snap)}
         else:
             raw = deterministic_decision(snap, policy)
             if not force_deterministic:
-                raw.reasoning_trace = "[no-api-key->deterministic] " + raw.reasoning_trace
+                raw.reasoning_trace = (
+                    "No model API key is configured, so the deterministic engine "
+                    "decided this cycle. " + raw.reasoning_trace)
 
         return {"agent_decision": _annotate_provenance(_sanitize(raw, snap, policy), snap)}
 

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { Cycle } from '../api';
 import { api } from '../api';
 import { Copy } from '../components/Copy';
-import { fmtDateTime, fmtNum, outcomeLabel, outcomeVariant, truncHash } from '../format';
+import { fmtDateTime, fmtNum, outcomeLabel, outcomeVariant, plainReasoning, truncHash } from '../format';
 import { usePoll } from '../hooks';
 
 const FILTERS = ['ALL', 'EXECUTED', 'BLOCKED', 'HOLD', 'VALIDATION_FAILED'] as const;
@@ -69,10 +69,14 @@ export function Audit() {
               <tr key={c.id}>
                 <td className="mono" style={{ whiteSpace: 'nowrap' }}>{fmtDateTime(c.finished_at)}</td>
                 <td><span className={`tag ${outcomeVariant(c.outcome)}`}>{outcomeLabel(c.outcome)}</span></td>
-                <td style={{ maxWidth: 380 }}>
-                  <span className="mono" style={{ fontSize: 12 }}>
-                    {c.action === 'REALLOCATE' && c.from_pool ? `${fmtNum(c.amount)} ${c.from_pool}→${c.to_pool} · ` : ''}
-                    {c.reasoning ?? c.hold_reason ?? '—'}
+                <td style={{ maxWidth: 420 }}>
+                  <span style={{ fontSize: 13, lineHeight: 1.55 }}>
+                    {c.action === 'REALLOCATE' && c.from_pool && (
+                      <span className="mono" style={{ fontWeight: 600, color: 'var(--text)' }}>
+                        {fmtNum(c.amount)} {c.from_pool} → {c.to_pool}.{' '}
+                      </span>
+                    )}
+                    {plainReasoning(c.reasoning ?? c.hold_reason)}
                   </span>
                 </td>
                 <td className="mono">

@@ -5,7 +5,8 @@ export function Copy({ text }: { text: string }) {
   return (
     <button
       className="copy-ico"
-      title="Copy"
+      title="Copy to clipboard"
+      aria-label="Copy to clipboard"
       onClick={(e) => {
         e.stopPropagation();
         navigator.clipboard.writeText(text);

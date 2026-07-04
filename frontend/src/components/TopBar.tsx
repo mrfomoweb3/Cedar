@@ -4,9 +4,10 @@ import { usePoll } from '../hooks';
 import { StatusChip } from './StatusChip';
 
 export function TopBar() {
-  const { data: status, refresh } = usePoll(api.status, 1000);
+  const { data: status, error, refresh } = usePoll(api.status, 1000);
 
   const paused = status?.paused ?? false;
+  const offline = !!error && !status;
 
   const toggle = async () => {
     if (paused) await api.resume();
@@ -17,7 +18,8 @@ export function TopBar() {
   return (
     <div className="topbar">
       <div className="flex gap" style={{ gap: 20 }}>
-        <StatusChip status={status?.status ?? 'idle'} />
+        <StatusChip status={offline ? 'offline' : (status?.status ?? 'idle')} />
+        {offline && <span className="metric-sm" style={{ color: 'var(--error)' }}>API unreachable</span>}
         <span className="metric-sm">
           Next check in{' '}
           <span className="mono" style={{ color: 'var(--text)' }}>
