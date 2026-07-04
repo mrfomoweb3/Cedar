@@ -1,9 +1,10 @@
 import type { Cycle } from './api';
 
+// Restrained categorical palette on white: green accent + warm amber + slate.
 export const POOL_COLORS: Record<string, string> = {
-  PoolA: '#7C5CFF',
-  PoolB: '#4ADE80',
-  PoolC: '#38BDF8',
+  PoolA: '#1A5C2E',
+  PoolB: '#C77D3A',
+  PoolC: '#3E6D8E',
 };
 
 export function fmtNum(n: number | null | undefined, dp = 2): string {

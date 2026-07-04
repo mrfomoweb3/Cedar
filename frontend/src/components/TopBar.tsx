@@ -21,7 +21,7 @@ export function TopBar() {
         <StatusChip status={status?.status ?? 'idle'} />
         <span className="metric-sm">
           Next check in{' '}
-          <span className="mono" style={{ color: 'var(--text-primary)' }}>
+          <span className="mono" style={{ color: 'var(--text)' }}>
             {fmtCountdown(status?.next_cycle_in)}
           </span>
         </span>

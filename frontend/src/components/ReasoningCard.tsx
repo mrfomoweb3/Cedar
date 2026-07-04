@@ -64,7 +64,7 @@ export function ReasoningCard({ cycle, defaultOpen = false }: { cycle: Cycle; de
           {cycle.reasoning && (
             <div className="rrow" style={{ marginTop: 4 }}>
               <span className="k">Rationale:</span>
-              <span className="v" style={{ color: 'var(--text-secondary)' }}>{cycle.reasoning}</span>
+              <span className="v" style={{ color: 'var(--text-2)' }}>{cycle.reasoning}</span>
             </div>
           )}
           <div className="rrow" style={{ marginTop: 4 }}>

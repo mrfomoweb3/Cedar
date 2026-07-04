@@ -52,10 +52,10 @@ export function Landing() {
 
       {/* hero */}
       <section className="lp-hero">
-        <div className="lp-glow" />
-        <span className="lp-chip">● LIVE ON CASPER TESTNET</span>
+        <div className="lp-grid-bg" />
+        <span className="lp-chip">LIVE ON CASPER TESTNET</span>
         <h1 className="lp-h1">
-          An autonomous agent that<br />moves capital — and knows<br />
+          An autonomous agent that moves capital — and knows{' '}
           <span className="lp-grad">when to refuse.</span>
         </h1>
         <p className="lp-sub">
@@ -64,15 +64,15 @@ export function Landing() {
           defense-in-depth safety pipeline — and every refusal is logged.
         </p>
         <div className="lp-cta-row">
-          <Link to="/app" className="lp-btn lp-btn-primary lp-btn-lg">Launch the live agent</Link>
+          <Link to="/app" className="lp-btn lp-btn-primary lp-btn-lg">Launch the live agent →</Link>
           <a href={EXPLORER} target="_blank" rel="noreferrer" className="lp-btn lp-btn-ghost lp-btn-lg">
             View contract on testnet ↗
           </a>
         </div>
-        <div className="lp-stats">
-          <div className="lp-stat"><div className="lp-stat-n">{cycles ?? '—'}</div><div className="lp-stat-l">autonomous cycles</div></div>
-          <div className="lp-stat"><div className="lp-stat-n">{blocks ?? '—'}</div><div className="lp-stat-l">unsafe moves blocked</div></div>
-          <div className="lp-stat"><div className="lp-stat-n">0</div><div className="lp-stat-l">human confirmations</div></div>
+        <div className="lp-proofcards">
+          <div className="lp-pc"><div className="lp-pc-n green">{cycles ?? '—'}</div><div className="lp-pc-l">autonomous cycles run</div></div>
+          <div className="lp-pc"><div className="lp-pc-n">{blocks ?? '—'}</div><div className="lp-pc-l">unsafe moves blocked</div></div>
+          <div className="lp-pc"><div className="lp-pc-n">0</div><div className="lp-pc-l">human confirmations</div></div>
         </div>
       </section>
 
@@ -128,7 +128,7 @@ export function Landing() {
           <div className="lp-proof-row"><span className="lp-proof-k">Autonomous reallocation</span>
             <a href="https://testnet.cspr.live/deploy/ef454d281d2605ea8610a3662fd791b218921cc6d1f7932cceea63588001cd60" target="_blank" rel="noreferrer" className="mono lp-link">ef454d28…cd60 ↗</a></div>
           <div className="lp-proof-row"><span className="lp-proof-k">Refusal on real data</span>
-            <span className="mono" style={{ color: 'var(--accent-blocked)' }}>recheck disagreement → HOLD</span></div>
+            <span className="mono" style={{ color: 'var(--blocked)' }}>recheck disagreement → HOLD</span></div>
         </div>
         <div style={{ marginTop: 28 }}>
           <Link to="/app" className="lp-btn lp-btn-primary lp-btn-lg">Watch it decide, live →</Link>

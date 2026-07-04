@@ -18,7 +18,7 @@ export function PolicyForm({ policy, onChange }: Props) {
       <div className="field">
         <label>
           Min APY delta to trigger reallocation
-          <span className="mono" style={{ float: 'right', color: 'var(--accent-primary)' }}>
+          <span className="mono" style={{ float: 'right', color: 'var(--accent)' }}>
             {fmtNum(policy.min_apy_delta, 1)}%
           </span>
         </label>
@@ -30,7 +30,7 @@ export function PolicyForm({ policy, onChange }: Props) {
       <div className="field">
         <label>
           Max % of portfolio movable per cycle
-          <span className="mono" style={{ float: 'right', color: 'var(--accent-primary)' }}>
+          <span className="mono" style={{ float: 'right', color: 'var(--accent)' }}>
             {fmtNum(policy.max_reallocation_pct, 0)}%
           </span>
         </label>

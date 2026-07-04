@@ -25,7 +25,7 @@ export function Sidebar() {
           </NavLink>
         ))}
       </nav>
-      <div style={{ marginTop: 'auto', padding: '12px', color: 'var(--text-tertiary)', fontSize: 11 }}>
+      <div style={{ marginTop: 'auto', padding: '12px', color: 'var(--text-3)', fontSize: 11 }}>
         <span className="chip testnet">CASPER TESTNET</span>
         <div className="mono" style={{ marginTop: 10 }}>Autonomous yield router</div>
       </div>

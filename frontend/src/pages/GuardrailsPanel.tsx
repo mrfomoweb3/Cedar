@@ -34,7 +34,7 @@ export function GuardrailsPanel() {
 
       {gr?.cross_source && (
         <div className="card" style={{ marginBottom: 16,
-          borderLeft: `3px solid ${gr.cross_source.verified ? 'var(--accent-live)' : 'var(--accent-blocked)'}` }}>
+          borderLeft: `3px solid ${gr.cross_source.verified ? 'var(--live)' : 'var(--blocked)'}` }}>
           <div className="flex between">
             <div style={{ fontWeight: 600 }}>Data Provenance — Cross-Source Verification</div>
             <span className={gr.cross_source.verified ? 'badge-ok' : 'badge-warn'}>
@@ -44,7 +44,7 @@ export function GuardrailsPanel() {
             </span>
           </div>
           <div className="mono" style={{ marginTop: 8, fontSize: 12,
-            color: gr.cross_source.verified ? 'var(--accent-live)' : 'var(--accent-blocked)' }}>
+            color: gr.cross_source.verified ? 'var(--live)' : 'var(--blocked)' }}>
             {gr.cross_source.note}
           </div>
           <div className="muted" style={{ marginTop: 8, fontSize: 12, lineHeight: 1.6 }}>
