@@ -1,0 +1,150 @@
+/* Cedar /docs — standalone documentation page. Theme-aware via the shared
+   CSS variables in index.css. Diagrams are built with CSS (not SVG) so they
+   respond to the light/dark toggle and reflow on mobile. */
+
+.docs {
+  --docs-max: 1180px;
+  color: var(--text);
+  background: var(--bg);
+  min-height: 100vh;
+}
+
+/* --- top nav --- */
+.docs-nav {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; padding: 14px 24px;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: saturate(1.2) blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+.docs-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
+.docs-brand img { width: 24px; height: 24px; }
+.docs-nav-right { display: flex; align-items: center; gap: 12px; }
+.docs-nav-link { color: var(--text-2); font-size: 13.5px; font-weight: 500; }
+.docs-nav-link:hover { color: var(--accent); }
+
+/* --- layout: sticky TOC + content --- */
+.docs-shell {
+  max-width: var(--docs-max); margin: 0 auto; padding: 0 24px;
+  display: grid; grid-template-columns: 220px 1fr; gap: 48px;
+}
+.docs-toc { position: sticky; top: 78px; align-self: start; height: max-content; padding: 28px 0; }
+.docs-toc-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); margin-bottom: 12px; }
+.docs-toc a {
+  display: block; padding: 5px 10px; margin-left: -10px; border-radius: 7px;
+  color: var(--text-2); font-size: 13.5px; line-height: 1.5;
+}
+.docs-toc a:hover { color: var(--text); background: var(--elevated); }
+
+.docs-main { padding: 28px 0 96px; min-width: 0; }
+
+/* --- hero --- */
+.docs-hero { padding: 24px 0 40px; border-bottom: 1px solid var(--border); margin-bottom: 40px; }
+.docs-eyebrow { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); font-weight: 600; }
+.docs-h1 { font-size: clamp(30px, 5vw, 44px); font-weight: 800; letter-spacing: -0.02em; margin: 12px 0 14px; line-height: 1.08; }
+.docs-lede { font-size: 17px; line-height: 1.6; color: var(--text-2); max-width: 660px; }
+.docs-badges { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 22px; }
+.docs-badge { display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px;
+  background: var(--elevated); border: 1px solid var(--border); font-size: 12.5px; color: var(--text-2); font-weight: 500; }
+.docs-badge b { color: var(--text); font-weight: 600; }
+
+/* --- sections --- */
+.docs-section { scroll-margin-top: 90px; padding-top: 8px; margin-bottom: 56px; }
+.docs-section h2 { font-size: 25px; font-weight: 700; letter-spacing: -0.01em; margin-bottom: 8px; }
+.docs-section h3 { font-size: 16px; font-weight: 650; margin: 28px 0 10px; }
+.docs-section p { color: var(--text-2); line-height: 1.7; font-size: 15px; margin-bottom: 14px; max-width: 720px; }
+.docs-section p b { color: var(--text); font-weight: 600; }
+.docs-section a { color: var(--accent); font-weight: 500; }
+.docs-section a:hover { text-decoration: underline; }
+.docs-lead-sub { color: var(--text-3); font-size: 14px; margin-top: -2px; margin-bottom: 22px; }
+.docs-callout {
+  border-left: 3px solid var(--accent); background: var(--elevated);
+  padding: 12px 16px; border-radius: 0 10px 10px 0; margin: 18px 0; font-size: 14px; color: var(--text-2); line-height: 1.6;
+}
+.docs-callout b { color: var(--text); }
+
+/* --- pipeline diagram (CSS) --- */
+.docs-pipeline { display: flex; align-items: stretch; gap: 0; overflow-x: auto; padding: 6px 2px 16px; }
+.docs-pstep {
+  flex: 1 0 132px; min-width: 132px; position: relative;
+  background: var(--elevated); border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 14px 16px; margin-right: 26px;
+}
+.docs-pstep:last-child { margin-right: 0; }
+.docs-pstep::after {
+  content: '→'; position: absolute; right: -22px; top: 50%; transform: translateY(-50%);
+  color: var(--text-3); font-size: 18px; line-height: 1;
+}
+.docs-pstep:last-child::after { content: none; }
+.docs-pnum { font-size: 11px; font-weight: 700; color: var(--accent); font-variant-numeric: tabular-nums; }
+.docs-pname { font-size: 14px; font-weight: 700; margin: 4px 0 6px; letter-spacing: 0.01em; }
+.docs-psub { font-size: 12px; color: var(--text-3); line-height: 1.45; }
+.docs-plog {
+  margin-top: 14px; text-align: center; background: color-mix(in srgb, var(--accent) 10%, var(--elevated));
+  border: 1px dashed var(--accent); border-radius: 10px; padding: 10px; font-size: 13px; color: var(--text-2);
+}
+.docs-plog b { color: var(--text); }
+
+/* --- step detail cards --- */
+.docs-steps { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+.docs-step {
+  display: grid; grid-template-columns: 44px 1fr; gap: 16px; align-items: start;
+  background: var(--elevated); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px;
+}
+.docs-step-n {
+  width: 44px; height: 44px; border-radius: 10px; display: grid; place-items: center;
+  background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent);
+  font-weight: 800; font-size: 16px;
+}
+.docs-step-k { font-weight: 700; font-size: 15px; margin-bottom: 3px; }
+.docs-step-d { color: var(--text-2); font-size: 14px; line-height: 1.6; }
+.docs-step-fail { display: inline-block; margin-top: 6px; font-size: 11.5px; font-weight: 600;
+  color: var(--text-3); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 2px 8px; }
+
+/* --- architecture stack --- */
+.docs-arch { display: flex; flex-direction: column; gap: 10px; margin: 8px 0 4px; }
+.docs-layer { border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; background: var(--elevated); }
+.docs-layer-t { font-size: 12px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-3); margin-bottom: 8px; }
+.docs-layer-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.docs-chip { font-size: 13px; padding: 5px 11px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); color: var(--text); }
+.docs-arch-arrow { text-align: center; color: var(--text-3); font-size: 16px; line-height: 1; }
+
+/* --- feature grid --- */
+.docs-features { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.docs-feature { background: var(--elevated); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+.docs-feature-ico { font-size: 20px; }
+.docs-feature-t { font-weight: 650; font-size: 15px; margin: 10px 0 6px; }
+.docs-feature-d { color: var(--text-2); font-size: 13.5px; line-height: 1.6; }
+
+/* --- tables --- */
+.docs-tablewrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; margin: 8px 0; }
+.docs-table { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 520px; }
+.docs-table th, .docs-table td { text-align: left; padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.docs-table th { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-3); font-weight: 600; background: var(--surface); }
+.docs-table tr:last-child td { border-bottom: none; }
+.docs-table td:first-child { white-space: nowrap; }
+.docs-table code, .docs-code { font-family: var(--mono); font-size: 12.5px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; color: var(--accent); }
+.docs-pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; }
+.docs-pill.exec { background: var(--live-050); color: var(--live); }
+.docs-pill.block { background: var(--blocked-050); color: var(--blocked); }
+.docs-pill.fail { background: var(--error-050); color: var(--error); }
+
+/* --- code block --- */
+.docs-pre {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px 18px; overflow-x: auto; font-family: var(--mono); font-size: 12.5px;
+  line-height: 1.7; color: var(--text-2); margin: 8px 0 16px;
+}
+.docs-pre .c { color: var(--text-3); }
+
+/* --- footer --- */
+.docs-footer { border-top: 1px solid var(--border); padding: 28px 0; margin-top: 32px;
+  display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; align-items: center;
+  color: var(--text-3); font-size: 13px; }
+
+@media (max-width: 860px) {
+  .docs-shell { grid-template-columns: 1fr; gap: 0; }
+  .docs-toc { display: none; }
+}

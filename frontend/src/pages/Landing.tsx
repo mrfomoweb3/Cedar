@@ -55,6 +55,7 @@ export function Landing() {
           <a href="#safety">Safety</a>
           <a href="#proof">Live proof</a>
           <a href="#roadmap">Roadmap</a>
+          <Link to="/docs">Docs</Link>
         </nav>
         <div className="flex gap" style={{ justifySelf: 'end', gap: 10 }}>
           <ThemeToggle />

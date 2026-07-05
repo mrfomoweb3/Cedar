@@ -1,89 +1,161 @@
-# Cedar — Autonomous Yield-Routing Agent
+<div align="center">
 
-Cedar is an autonomous agent for the **Casper Agentic Buildathon 2026**. It watches
-pool yields on Casper, decides whether to move capital, and — with no human in the
-loop — signs and submits a real on-chain reallocation. Every action is gated by a
-defense-in-depth safety pipeline, and every decision (including refusals) is logged.
+# 🌲 Cedar — Autonomous Yield-Routing Agent
 
-The core thesis: **an autonomous agent that touches money is only as good as the
-things it refuses to do.** Cedar's architecture is built around that.
+**An autonomous agent that moves capital on Casper — and knows when to refuse.**
+
+Cedar observes DeFi pool yields on Casper, reasons over them with an LLM, and — with **no human in the loop** — signs and submits real on-chain reallocations to an owner-gated smart contract. Every action clears a defense-in-depth safety pipeline; every decision, including every refusal, is logged and auditable.
+
+[![Live](https://img.shields.io/badge/live-trycedar.xyz-1A5C2E)](https://trycedar.xyz)
+[![Network](https://img.shields.io/badge/network-Casper%20Testnet-blue)](https://testnet.cspr.live/contract-package/dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135)
+[![Reasoning](https://img.shields.io/badge/reasoning-Groq%20·%20Llama%203.3-orange)](https://groq.com)
+[![Contract](https://img.shields.io/badge/contract-Odra%20·%20Rust-red)](contracts/vault_router/src/lib.rs)
+[![Tests](https://img.shields.io/badge/tests-43%20passing-brightgreen)](tests/)
+
+[**Live app**](https://trycedar.xyz) · [**Docs**](https://trycedar.xyz/docs) · [**Contract on explorer**](https://testnet.cspr.live/contract-package/dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135) · [**Deployment guide**](DEPLOY.md)
+
+</div>
+
+---
+
+## Table of contents
+
+- [Why Cedar](#why-cedar)
+- [The autonomous loop](#the-autonomous-loop)
+- [Architecture](#architecture)
+- [Quickstart](#quickstart)
+- [Configuration](#configuration)
+- [API reference](#api-reference)
+- [Smart contract](#smart-contract--vaultrouter)
+- [Safety design (for reviewers)](#safety-design-for-reviewers)
+- [Cost controls](#cost-controls)
+- [Deployment](#deployment)
+- [Tech stack](#tech-stack)
+- [Project layout](#project-layout)
+- [Roadmap](#roadmap)
+
+---
+
+## Why Cedar
+
+The core thesis: **an autonomous agent that touches money is only as good as the things it refuses to do.**
+
+Most "AI agent" demos are a single LLM call wired straight to an action. Cedar is the opposite — the LLM is one link in a chain where **every other link can veto it**:
+
+- Bad market data is rejected *before* the model ever sees it.
+- The model sees **only** a validated snapshot — it cannot browse, recall, or invent.
+- Its output is **hard-checked in code** — fabricated numbers, unknown pools, and over-cap amounts force a HOLD.
+- A **deterministic, non-LLM engine independently re-derives** the decision; disagreement forces a HOLD.
+- **Named guardrails** (cooldown, position cap, cost-vs-gain, anomaly) each get a final veto.
+- **Every path** — action or refusal — is logged with full data provenance.
+
+The durable asset isn't the yield router; it's the **safety pipeline**. Cedar is its reference implementation on Casper.
+
+Built for the **Casper Agentic Buildathon 2026**.
+
+---
 
 ## The autonomous loop
 
 ```
-[OBSERVE] → [VALIDATE] → [REASON] → [RECHECK] → [GUARDRAILS] → [ACTUATE]
-                 │            │           │            │             │
-              (fail)      force-HOLD   disagree     any fail     tx hash
-                 └────────────┴───────────┴────────────┴─────────────┘
-                                        ▼
-                                   [LOG]  (runs on every path)
+  ┌───────────┐   ┌────────────┐   ┌──────────┐   ┌───────────┐   ┌─────────────┐   ┌───────────┐
+  │  OBSERVE  │──▶│  VALIDATE  │──▶│  REASON  │──▶│  RECHECK  │──▶│  GUARDRAILS │──▶│  ACTUATE  │
+  └───────────┘   └────────────┘   └──────────┘   └───────────┘   └─────────────┘   └───────────┘
+        │               │                │              │                │                 │
+     read APY +      range /          LLM over      deterministic     cooldown ·       sign + submit
+     on-chain        staleness /      validated     re-derivation ·   position cap ·   reallocate deploy,
+     allocation      divergence       data only ·   disagree →        cost · anomaly · capture tx hash
+                     → force-HOLD     code guards    force-HOLD        first fail → BLOCK
+        │               │                │              │                │                 │
+        └───────────────┴────────────────┴──────────────┴────────────────┴─────────────────┘
+                                                  ▼
+                                            ┌───────────┐
+                                            │    LOG    │  one record per cycle → dashboard feed + audit log
+                                            └───────────┘
 ```
 
-No confirm button sits between REASON and ACTUATE. Safety comes from the pipeline,
-not from a human clicking "yes":
+**There is no confirm button between REASON and ACTUATE.** Safety comes from the pipeline, not from a human clicking "yes."
 
-1. **OBSERVE** — pull per-pool APY, on-chain allocation, and a gas estimate from the
-   Casper MCP Server + CSPR.trade MCP into a typed `MarketSnapshot`.
-2. **VALIDATE** — the bad-data guardrail. Range-checks APYs (a 9000% reading is bad
-   data, not a jackpot), rejects stale snapshots, and **halts on cross-source
-   divergence rather than averaging**.
-3. **REASON** — a schema-constrained LLM call (Llama 3.3 on Groq by default; Claude optional) that sees *only* the validated
-   snapshot + policy. Its JSON output is then hard-checked in code: unknown pools,
-   over-cap amounts, and fabricated figures all force a HOLD. No second LLM call.
-4. **RECHECK** — a deterministic, non-LLM re-derivation of the same decision. If the
-   dumb rule and the model disagree, Cedar force-HOLDs. They should always agree;
-   the disagreement path is the last line of defense.
-5. **GUARDRAILS** — cooldown, position cap, cost-vs-gain, and a final anomaly pass.
-   First failure short-circuits to a logged, named refusal.
-6. **ACTUATE** — only if everything passes. Signs + submits the `reallocate` deploy
-   with the agent's own key (server-side signing is the sole actuation path, and the
-   contract enforces it: owner-only entrypoints) and captures the tx hash. Failures are surfaced, never
-   silently retried (no double-spend).
-7. **LOG** — one record per cycle powers both the live dashboard feed and the audit
-   log.
+| # | Stage | What it does | Failure mode |
+|---|-------|--------------|--------------|
+| 1 | **OBSERVE** | Pull per-pool APY, on-chain allocation, and a gas estimate into a typed `MarketSnapshot`. Allocations are read **directly from contract storage**. | — |
+| 2 | **VALIDATE** | Range-check APYs (a 9000% reading is bad data, not a jackpot), reject stale snapshots, **halt on cross-source divergence rather than averaging.** | `VALIDATION_FAILED` |
+| 3 | **REASON** | Schema-constrained LLM call (Llama 3.3 on Groq) over *only* the validated snapshot + policy. Output is hard-checked in code. | force-`HOLD` |
+| 4 | **RECHECK** | A deterministic, non-LLM engine re-derives the same decision. Disagreement is the last line of defense. | force-`HOLD` |
+| 5 | **GUARDRAILS** | `cooldown` → `position_cap` → `cost_check` → `anomaly_recheck`. First failure short-circuits to a named, logged refusal. | `BLOCKED` |
+| 6 | **ACTUATE** | Only if everything passes: sign + submit the `reallocate` deploy with the agent's key; capture the tx hash. Failures surfaced, never silently retried. | `EXECUTION_FAILED` |
+| 7 | **LOG** | One record per cycle powers the live dashboard feed **and** the audit log. Runs on every path. | — |
 
-## Repo layout
+---
+
+## Architecture
 
 ```
-contracts/vault_router/   Odra smart contract (deposit / reallocate / views) + tests
-agent/
-  graph.py                LangGraph StateGraph wiring the pipeline above
-  types.py                typed state, policy, snapshot, decision models
-  decision.py             deterministic decision engine (recheck + fallback)
-  mcp_clients.py          Casper/CSPR.trade read adapters (mock + real seam)
-  cspr_click.py           CSPR.click write adapter (mock + real seam)
-  scheduler.py            fixed-interval loop runner with pause/resume
-  nodes/                  observe · validate · reason · recheck · guardrails · actuate · log
-api/
-  main.py                 FastAPI control plane + dashboard endpoints
-  store.py                SQLite store (cycle log, policy, allocations, run-state)
-tests/                    per-segment test gates (46 tests: 40 Python + 6 contract)
-scripts/                  deploy_contract.sh · seed_demo.py
+                        ┌──────────────────────── Browser (trycedar.xyz) ────────────────────────┐
+                        │  React 19 + Vite SPA   ·   / landing   ·   /app dashboard   ·   /docs   │
+                        └───────────────────────────────────┬───────────────────────────────────┘
+                                                             │  same-origin HTTPS (JSON)
+                        ┌────────────────────────────────────▼──────────────────────────────────┐
+                        │                    FastAPI control plane  (api/main.py)                 │
+                        │   /agent/status · feed · portfolio · guardrails · audit · policy · …    │
+                        │                     serves the built dashboard too                      │
+                        └───────┬───────────────────────────────┬──────────────────────┬─────────┘
+                                │                               │                      │
+                 in-process     │                               │ SQLAlchemy           │ LangGraph
+                 scheduler ─────┘                               ▼                      ▼
+                 (fixed interval,                     ┌──────────────────┐   ┌────────────────────────┐
+                  pause/resume)                       │  Store           │   │  Agent (StateGraph)    │
+                                                      │  Postgres/SQLite │   │  observe→validate→…→log │
+                                                      │  cycles·policy·  │   └───────┬────────┬───────┘
+                                                      │  allocations     │           │        │
+                                                      └──────────────────┘   reads   │        │ writes
+                                                                                     ▼        ▼
+                                              ┌────────────────────────────┐  ┌──────────────────────────┐
+                                              │  MarketDataSource (read)   │  │   Signer (write)          │
+                                              │  CSPR.trade MCP + Casper   │  │   casper-client →         │
+                                              │  MCP · cross-source check  │  │   VaultRouter.reallocate  │
+                                              └────────────────────────────┘  └──────────────────────────┘
+                                                                                     │
+                                                                          ┌──────────▼──────────┐
+                                                                          │  Casper Testnet      │
+                                                                          │  Odra VaultRouter    │
+                                                                          └─────────────────────┘
 ```
 
-## Quickstart (backend, fully offline)
+The agent graph depends only on two protocols — `MarketDataSource` (read) and `Signer` (write). Mock implementations drive dev/tests/offline demos; the Casper implementations wire the real chain. **Switch with two env vars; nothing else changes.**
+
+---
+
+## Quickstart
+
+### Prerequisites
+- Python 3.12+
+- Node 20+ (for the dashboard)
+- *(optional, for real chain writes)* [`casper-client`](https://docs.casper.network/) 5.0.1 and a funded testnet key
+
+### Backend (fully offline, no keys required)
 
 ```bash
+git clone https://github.com/mrfomoweb3/Cedar.git && cd Cedar
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-# run the test suite (all segment gates)
-pytest -q
-
-# seed and run the demo scenarios in-process (no server, no chain)
-python scripts/seed_demo.py --local
-
-# or run the live API + autonomous loop
-cp .env.example .env
-uvicorn api.main:app --reload
+pytest -q                         # run the full test suite (43 passing)
+cp .env.example .env              # defaults run offline in mock mode
+uvicorn api.main:app --reload     # http://localhost:8000
 ```
 
-With no `GROQ_API_KEY` set, the REASON node transparently falls back to the
-deterministic engine so the whole loop runs offline. Set the key (and
-`CEDAR_MODEL`) to put a real model in the loop; the code-side output guards apply either
-way.
+With no `GROQ_API_KEY` set, REASON transparently falls back to the deterministic engine, so the entire loop runs offline. Set the key to put a real model in the loop — the code-side output guards apply either way.
 
-### Demo controls
+### Frontend (dashboard)
+
+```bash
+cd frontend
+npm install
+npm run dev        # http://localhost:5173  (VITE_API_BASE defaults to :8000)
+```
+
+### Try it in 30 seconds
 
 ```bash
 curl -X POST localhost:8000/agent/demo/spike     # APY spike  → expect EXECUTED
@@ -93,146 +165,177 @@ curl      localhost:8000/agent/feed              # live reasoning feed
 curl -X POST localhost:8000/agent/pause          # kill switch
 ```
 
-## Frontend (dashboard)
+---
 
-Dark-mode fintech-terminal UI (Vite + React + TS + recharts) built to make the
-agent's autonomy *visible* — the live reasoning feed is the hero, and refusals
-are rendered as prominently as executions. Six screens: Live Dashboard,
-Portfolio, Guardrails & Safety, Audit Log, Policy Settings, Onboarding.
+## Configuration
 
-```bash
-# with the API running on :8000
-cd frontend
-npm install
-npm run dev            # http://localhost:5173  (VITE_API_BASE defaults to :8000)
-```
+All configuration is via environment variables (see [`.env.example`](.env.example)).
 
-The Dashboard's **Spike APY** / **Bad Data** / **Run Cycle** buttons drive the two
-demo scenarios live on camera. Executed cycles show a copyable tx hash linking to
-the Casper testnet explorer; blocked cycles show the named guardrail that fired.
+### Reasoning (LLM)
+| Variable | Default | Purpose |
+|---|---|---|
+| `CEDAR_LLM_PROVIDER` | `groq` | `groq` (Llama, default) or `anthropic` (Claude) |
+| `GROQ_API_KEY` | — | Groq key ([free](https://console.groq.com)); without it, deterministic fallback |
+| `CEDAR_MODEL` | `llama-3.3-70b-versatile` | Model id for the active provider |
+| `CEDAR_MAX_TOKENS` | `512` | Cap on model output tokens |
+| `CEDAR_LLM_GATE` | `1` | Skip the model on clear-HOLD cycles, during cooldown, and past budget |
+| `CEDAR_LLM_DAILY_BUDGET` | `0` | Max model calls/day (`0` = unlimited) |
 
-## API
+### Chain (reads & writes)
+| Variable | Default | Purpose |
+|---|---|---|
+| `CEDAR_DATA_SOURCE` | `mock` | `mock` or `casper` (real MCP reads) |
+| `CEDAR_SIGNER` | `mock` | `mock` (fabricated hashes) or `casper` (**real on-chain signing**) |
+| `VAULT_ROUTER_HASH` | — | Deployed contract package hash |
+| `CASPER_NODE_URL` | testnet public node | JSON-RPC endpoint |
+| `CASPER_SECRET_KEY` / `CASPER_SECRET_KEY_B64` | — | Signing key path, or base64 (decoded to a file at startup for PaaS hosts) |
+| `CASPER_CALL_PAYMENT` | `5000000000` | Motes per reallocate (5 CSPR) |
+
+### Loop & storage
+| Variable | Default | Purpose |
+|---|---|---|
+| `CEDAR_INTERVAL` | `120` | Seconds between cycles |
+| `CEDAR_AUTOSTART` | `1` | Start the loop on boot |
+| `DATABASE_URL` | — | Postgres (production); falls back to SQLite `CEDAR_DB` |
+
+> ⚠️ **Single instance only.** The scheduler is an in-process thread — running 2 replicas means 2 agents both signing.
+
+---
+
+## API reference
+
+Base URL: same origin as the dashboard (`https://trycedar.xyz`).
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET  | `/agent/status`    | current state + next-cycle countdown |
-| GET  | `/agent/feed`      | recent cycle log (dashboard feed) |
-| GET  | `/agent/portfolio` | allocation across pools + total value |
-| GET  | `/agent/guardrails`| guardrail config + trigger counts + history |
-| GET  | `/agent/audit`     | full paginated audit log |
-| GET/POST | `/agent/policy`| read / update the active policy |
-| POST | `/agent/pause` · `/agent/resume` | kill switch |
-| POST | `/agent/onboard`   | initial policy + wallet connect |
-| POST | `/agent/run-once`  | run a single cycle now |
-| POST | `/agent/demo/{name}` | seed a demo scenario (`spike` · `bad-data` · `divergence`) |
+| `GET`  | `/healthz` | Liveness + current mode (`data_source`, `signer`, `db`) |
+| `GET`  | `/agent/status` | Current state + next-cycle countdown |
+| `GET`  | `/agent/feed` | Recent cycle log (dashboard feed) |
+| `GET`  | `/agent/portfolio` | Allocation across pools + total value |
+| `GET`  | `/agent/guardrails` | Guardrail config + trigger counts + history |
+| `GET`  | `/agent/audit` | Full paginated audit log |
+| `GET` / `POST` | `/agent/policy` | Read / update the active policy |
+| `POST` | `/agent/pause` · `/agent/resume` | Kill switch |
+| `POST` | `/agent/onboard` | Initial policy + wallet connect |
+| `POST` | `/agent/run-once` | Run a single cycle now |
+| `POST` | `/agent/demo/{name}` | Seed a demo scenario (`spike` · `bad-data` · `divergence`) |
 
-## Smart contract — `VaultRouter` (Odra, Casper Testnet)
+---
 
-Minimal by design (`contracts/vault_router/src/lib.rs`):
+## Smart contract — `VaultRouter`
 
-- `init()` → installer becomes owner (constructor)
-- `deposit(pool_id, amount)` → records allocation, **owner-only**, emits `Deposited`
-- `reallocate(from_pool, to_pool, amount)` → moves allocation, **owner-only**, emits `Reallocated`
-  — **the transaction-producing on-chain action**
-- `get_allocation(pool_id) -> U512` · `get_total_value() -> U512` · `get_owner()` — views
+Minimal by design ([`contracts/vault_router/src/lib.rs`](contracts/vault_router/src/lib.rs)), written in **Odra** (Rust):
 
-Pools are a fixed three-member enum (`PoolA/B/C`), matching the pre-vetted pool list.
+| Entrypoint | Access | Effect |
+|---|---|---|
+| `init()` | constructor | Installer becomes **owner** |
+| `deposit(pool_id, amount)` | **owner-only** | Records allocation, emits `Deposited` |
+| `reallocate(from_pool, to_pool, amount)` | **owner-only** | Moves allocation, emits `Reallocated` — *the transaction-producing action* |
+| `get_allocation` · `get_total_value` · `get_owner` | view | Reads |
+
+Pools are a fixed three-member enum (`PoolA/B/C`) matching the pre-vetted allow-list. Because entrypoints are owner-gated, **only the agent's key can actuate** — the contract enforces server-side signing as the sole write path.
+
+**Live on Casper Testnet:** [`hash-dc100561…b1828135`](https://testnet.cspr.live/contract-package/dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135)
 
 ```bash
-# native unit tests (Odra MockVM)
-cd contracts/vault_router && cargo test
-
-# build wasm + deploy to testnet (needs cargo-odra, casper-client, a funded key)
-cargo install cargo-odra
+cd contracts/vault_router && cargo test     # native Odra MockVM tests
+cargo install cargo-odra                     # build wasm + deploy
 scripts/deploy_contract.sh
 ```
 
-Record the deployed contract hash into `VAULT_ROUTER_HASH` (see `.env.example`);
-the server-side signer targets it for the real `reallocate` submission. The
-installing account becomes the contract **owner** — `deposit`/`reallocate` are
-owner-only, so only the agent's key can actuate.
+---
 
-**Testnet contract address (LIVE):**
-[`hash-dc100561…b1828135`](https://testnet.cspr.live/contract-package/dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135)
-— deployed to `casper-test`, with verifiable `deposit` + `reallocate` transactions.
-See [DEPLOYMENT.md](DEPLOYMENT.md) for all hashes and explorer links.
+## Safety design (for reviewers)
 
-## Real chain integration (verified live)
+| Concern | Where it lives |
+|---|---|
+| Bad-data guardrail | [`agent/nodes/validate.py`](agent/nodes/validate.py) |
+| Grounded reasoning + code-side output guards | [`agent/nodes/reason.py`](agent/nodes/reason.py) |
+| Deterministic recheck | [`agent/nodes/recheck.py`](agent/nodes/recheck.py) + [`agent/decision.py`](agent/decision.py) |
+| Cooldown / position-cap / cost / anomaly | [`agent/nodes/guardrails.py`](agent/nodes/guardrails.py) |
+| Every-path logging + provenance | [`agent/nodes/log.py`](agent/nodes/log.py) |
+| On-chain state read-back | [`agent/chain_state.py`](agent/chain_state.py) |
 
-A full cycle has run end-to-end against real infrastructure — real reads, real
-reasoning, real on-chain actuation:
+**Data provenance is never silently dropped.** Single-source readings are surfaced as `UNVERIFIED` in the reasoning trace and the Guardrails UI. On-chain allocations are read from contract storage each cycle; an RPC failure falls back to cache *with a logged warning*, never silently.
 
-- **Reads — CSPR.trade MCP** (`https://mcp.cspr.trade/mcp`, public, testnet):
-  OBSERVE maps the 3 highest-TVL, actively-traded DEX pools → PoolA/B/C and
-  derives each pool's **fee APR** from real reserves + real swap volume (the DEX
-  exposes no native APY field). Verified live: WCSPR/sCSPR 0.44%, CD_LONG/WCSPR
-  1.07%, WCSPR/CD_SHORT 9.18%.
-- **Writes — server-side Casper signer**: ACTUATE signs + submits the real
-  `reallocate` deploy to the live VaultRouter and captures the tx hash. Example
-  autonomous cycle: reallocated 250 PoolA→PoolC (Δ 8.74pp), tx
-  [`f79ba36f…`](https://testnet.cspr.live/deploy/f79ba36fc0a4541be4995cff59ce4146657d82b7973fa96fb1ae485b8864f99c).
+---
 
-Enable with `CEDAR_DATA_SOURCE=casper CEDAR_SIGNER=casper` (see `.env.example`).
+## Cost controls
 
-**Actuation is server-side signing only, by design.** A browser wallet SDK
-(CSPR.click) can't be driven by a headless autonomous loop, so ACTUATE signs with
-the agent's own key via casper-client. This is the deliberate, sole write path —
-there is no human-in-the-loop signing step.
+The LLM is consulted **only when capital might actually move**, protecting your API key:
 
-**Two honest caveats.** (1) The community **Casper MCP** server (chain reads +
-the intended *second* APY source for the cross-provider divergence check) needs a
-cspr.cloud API key — the client is fully wired (`agent/mcp_real.py`,
-`CasperCloudClient`) and gated on `CSPR_CLOUD_API_KEY`; until it's set the
-cross-source check mirrors the primary reading. (2) CSPR.trade has no native APY,
-so yield is a derived fee APR — documented, computed from real data.
+1. **Clear-HOLD gate** — if the deterministic pre-check sees no actionable move, the model is skipped.
+2. **Cooldown gate** — during an active cooldown a reallocation can't execute, so reasoning is skipped.
+3. **Daily budget** — `CEDAR_LLM_DAILY_BUDGET` caps calls/day; once spent, the deterministic engine decides.
 
-## Mock ↔ real seams
+Plus `CEDAR_MAX_TOKENS`, JSON mode, and `temperature=0` for cheap, deterministic calls.
 
-The graph depends only on a `MarketDataSource` (read) and a `Signer` (write)
-protocol. `MockMarketDataSource` / `MockSigner` drive dev, tests, and the offline
-demo; `CasperMCPDataSource` / `CsprClickSigner` are API-compatible stubs to wire the
-real Casper MCP + CSPR.click endpoints. Switch via `CEDAR_DATA_SOURCE` /
-`CEDAR_SIGNER` — nothing else changes.
+---
 
-## Where the safety design lives (for reviewers)
+## Deployment
 
-- Bad-data guardrail → [`agent/nodes/validate.py`](agent/nodes/validate.py)
-- Grounded reasoning + code-side output guards → [`agent/nodes/reason.py`](agent/nodes/reason.py)
-- Deterministic recheck → [`agent/nodes/recheck.py`](agent/nodes/recheck.py) + [`agent/decision.py`](agent/decision.py)
-- Cooldown / position-cap / cost / anomaly guardrails → [`agent/nodes/guardrails.py`](agent/nodes/guardrails.py)
-- Every-path logging → [`agent/nodes/log.py`](agent/nodes/log.py)
+Single-service Docker image (FastAPI serves the built dashboard — one URL, no CORS). The image builds `casper-client` from source so real on-chain signing works in the cloud.
 
-## On-chain state read-back
+```bash
+docker build -t cedar .
+docker run -p 8000:8000 --env-file .env cedar
+```
 
-Each cycle, OBSERVE reads allocations **directly from the deployed contract's
-storage** (`agent/chain_state.py` — Odra dictionary queries over JSON-RPC), so the
-agent acts on chain truth, not a local cache. RPC failure falls back to the cache
-with a **logged warning**, never silently. The cache is reconciled to chain on
-every successful read.
+**Railway (recommended):** connect the repo, add a Postgres plugin, set the env vars (`CEDAR_SIGNER=casper`, `CASPER_SECRET_KEY_B64`, `GROQ_API_KEY`, …), deploy. Keep it at **one replica**. Full walkthrough in **[DEPLOY.md](DEPLOY.md)**.
 
-## Roadmap — beyond the qualification round
+---
 
-Cedar's qualification scope is deliberately narrow: prove that *bounded, auditable
-autonomy* can safely route yield on Casper. What's next:
+## Tech stack
 
-**Near term (finals round)**
-- Real token custody: extend `VaultRouter` from allocation-records to escrowed
-  CEP-18 balances with per-pool adapters, keeping the owner-gated actuation model.
-- Activate the two-provider price cross-check on mainnet-indexed tokens (the code
-  ships now; testnet test-tokens aren't indexed by cspr.cloud).
-- Policy learning: use the cycle log to tune `min_apy_delta`/cooldown suggestions —
-  proposed to the human, never self-applied (the mandate stays human-owned).
+| Layer | Technology |
+|---|---|
+| Agent orchestration | **LangGraph** `StateGraph` (typed `CycleState`) |
+| Reasoning | **Groq** · Llama 3.3 70B (JSON mode) · Claude optional |
+| Backend | **FastAPI** · in-process scheduler · **SQLAlchemy** (Postgres / SQLite) |
+| Smart contract | **Odra** (Rust) on **Casper** · `casper-client` |
+| Data | **CSPR.trade MCP** + **Casper MCP** (two-provider cross-check) |
+| Frontend | **React 19** · **Vite** · TypeScript · **recharts** · light/dark theme |
+| Deploy | **Docker** (single service) · **Railway** / Render / Fly |
 
-**Medium term**
-- Multi-strategy support: LP fee yield + staking (sCSPR) + lending markets as they
-  mature on Casper, behind the same pre-vetted allow-list guardrail.
-- Notification channel (webhook/Telegram) for EXECUTED/BLOCKED events, so the
-  audit trail reaches the owner in real time.
-- Hosted demo deployment with a public read-only dashboard.
+---
 
-**Positioning**
-The durable asset isn't the yield router — it's the **safety pipeline**
-(validated observation → grounded reasoning → deterministic recheck → named
-guardrails → every-path logging with data provenance). That pattern applies to
-any agent that touches real value, and Cedar is its reference implementation on
-Casper.
+## Project layout
+
+```
+contracts/vault_router/   Odra smart contract (deposit / reallocate / views) + tests
+agent/
+  graph.py                LangGraph StateGraph wiring the pipeline
+  types.py                typed state, policy, snapshot, decision models
+  decision.py             deterministic decision engine (recheck + fallback)
+  config.py               env loading + PaaS secret materialization
+  chain_state.py          on-chain allocation read-back (JSON-RPC)
+  mcp_clients.py          Casper / CSPR.trade read adapters (mock + real)
+  mcp_real.py             real MCP clients (CSPR.trade, cspr.cloud)
+  cspr_click.py           server-side signer (mock + real casper-client)
+  scheduler.py            fixed-interval loop runner with pause/resume
+  nodes/                  observe · validate · reason · recheck · guardrails · actuate · log
+api/
+  main.py                 FastAPI control plane + serves the dashboard
+  store.py                SQLAlchemy store (cycles, policy, allocations, run-state)
+frontend/                 React + Vite dashboard, landing, and /docs
+tests/                    per-segment test gates (43 Python)
+scripts/                  deploy_contract.sh · seed_demo.py
+```
+
+---
+
+## Roadmap
+
+**Near term** — real token custody (escrowed CEP-18 balances behind the owner-gated model) · activate the two-provider price cross-check on mainnet-indexed tokens · policy learning (proposed to the human, never self-applied).
+
+**Medium term** — multi-strategy support (LP fees + staking + lending) behind the pre-vetted allow-list · notification channel (webhook/Telegram) for EXECUTED/BLOCKED events.
+
+**Positioning** — the pattern *(validated observation → grounded reasoning → deterministic recheck → named guardrails → every-path logging)* applies to any agent that touches real value.
+
+---
+
+<div align="center">
+
+**[Live app](https://trycedar.xyz)** · **[Docs](https://trycedar.xyz/docs)** · Built for the Casper Agentic Buildathon 2026
+
+</div>
