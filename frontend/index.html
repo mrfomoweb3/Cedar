@@ -18,6 +18,18 @@
     <meta property="og:image" content="/android-chrome-512x512.png" />
   </head>
   <body>
+    <script>
+      // set theme before paint to avoid a flash of the wrong theme
+      (function () {
+        try {
+          var t = localStorage.getItem('cedar-theme');
+          if (t !== 'light' && t !== 'dark') {
+            t = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          }
+          document.documentElement.setAttribute('data-theme', t);
+        } catch (e) {}
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

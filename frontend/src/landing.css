@@ -10,7 +10,7 @@
   position: sticky; top: 0; z-index: 20;
   display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 24px;
   padding: 18px 40px;
-  background: rgba(255,255,255,0.82); backdrop-filter: blur(12px);
+  background: color-mix(in srgb, var(--bg) 82%, transparent); backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
 }
 .lp-brand { justify-self: start; display: flex; align-items: center; gap: 11px; font-weight: 700;
@@ -27,7 +27,7 @@
   transition: all .14s;
 }
 .lp-btn:hover { background: var(--surface); }
-.lp-btn-primary { background: var(--ink); border-color: var(--ink); color: #fff; }
+.lp-btn-primary { background: var(--ink); border-color: var(--ink); color: var(--ink-text); }
 .lp-btn-primary:hover { background: #000; }
 .lp-btn-accent { background: var(--accent); border-color: var(--accent); color: #fff; }
 .lp-btn-accent:hover { background: var(--accent-hover); }
@@ -38,8 +38,8 @@
 .lp-hero {
   position: relative; text-align: center; padding: 96px 24px 72px; overflow: hidden;
   background:
-    radial-gradient(60% 55% at 50% 0%, rgba(26,92,46,.07), transparent 70%),
-    linear-gradient(180deg, #FCFDFC 0%, var(--bg) 60%);
+    radial-gradient(60% 55% at 50% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%),
+    linear-gradient(180deg, var(--surface) 0%, var(--bg) 60%);
 }
 .lp-grid-bg {
   position: absolute; inset: 0; z-index: 0; pointer-events: none;

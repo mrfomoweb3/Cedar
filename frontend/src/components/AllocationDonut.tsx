@@ -16,8 +16,8 @@ export function AllocationDonut({ allocations }: { allocations: Record<string, n
           {data.map((d) => <Cell key={d.name} fill={POOL_COLORS[d.name] || '#888'} />)}
         </Pie>
         <Tooltip
-          contentStyle={{ background: '#fff', border: '1px solid #E7E7E7', borderRadius: 10,
-            boxShadow: '0 2px 8px rgba(16,24,40,.08)', fontSize: 12.5 }}
+          contentStyle={{ background: 'var(--elevated)', border: '1px solid var(--border)',
+            borderRadius: 10, color: 'var(--text)', fontSize: 12.5 }}
           formatter={(v) => [`${fmtNum(Number(v))} CSPR`, '']} />
       </PieChart>
     </ResponsiveContainer>

@@ -2,12 +2,15 @@ import { useMemo } from 'react';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { api } from '../api';
 import { POOL_COLORS, fmtNum, fmtTime } from '../format';
-import { usePoll } from '../hooks';
+import { usePoll, useTheme } from '../hooks';
+import { chartColors } from '../theme';
 
 export function Portfolio() {
   const { data: portfolio } = usePoll(api.portfolio, 3000);
   const { data: feed } = usePoll(() => api.feed(100), 4000);
   const { data: guardrails } = usePoll(api.guardrails, 8000);
+  const { theme } = useTheme();
+  const cc = useMemo(() => chartColors(), [theme]);
 
   const pools = Object.keys(portfolio?.allocations ?? {});
 
@@ -57,10 +60,11 @@ export function Portfolio() {
         {series.length < 2 ? <div className="empty">not enough cycles yet</div> : (
           <ResponsiveContainer width="100%" height={260}>
             <AreaChart data={series}>
-              <CartesianGrid stroke="#2A2E35" strokeDasharray="3 3" vertical={false} />
-              <XAxis dataKey="t" stroke="#5C6470" fontSize={11} tickLine={false} />
-              <YAxis stroke="#5C6470" fontSize={11} tickLine={false} />
-              <Tooltip contentStyle={{ background: '#1C1F24', border: '1px solid #2A2E35', borderRadius: 6, fontFamily: 'JetBrains Mono' }} />
+              <CartesianGrid stroke={cc.grid} strokeDasharray="3 3" vertical={false} />
+              <XAxis dataKey="t" stroke={cc.axis} fontSize={11} tickLine={false} />
+              <YAxis stroke={cc.axis} fontSize={11} tickLine={false} />
+              <Tooltip contentStyle={{ background: cc.panel, border: `1px solid ${cc.border}`,
+                borderRadius: 10, color: cc.text, fontSize: 12.5 }} />
               {pools.map((p) => (
                 <Area key={p} type="monotone" dataKey={p} stackId="1" isAnimationActive={false}
                   stroke={POOL_COLORS[p]} fill={POOL_COLORS[p]} fillOpacity={0.25} />

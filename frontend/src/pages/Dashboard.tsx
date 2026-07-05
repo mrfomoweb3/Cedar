@@ -4,7 +4,8 @@ import { api } from '../api';
 import { AllocationDonut } from '../components/AllocationDonut';
 import { ReasoningCard } from '../components/ReasoningCard';
 import { POOL_COLORS, fmtNum, fmtTime } from '../format';
-import { usePoll } from '../hooks';
+import { usePoll, useTheme } from '../hooks';
+import { chartColors } from '../theme';
 
 export function Dashboard() {
   const { data: feed } = usePoll(() => api.feed(40), 2500);
@@ -12,6 +13,9 @@ export function Dashboard() {
   const { data: guardrails } = usePoll(api.guardrails, 4000);
   const { data: policy } = usePoll(api.getPolicy, 8000);
   const { data: status } = usePoll(api.status, 2000);
+
+  const { theme } = useTheme();
+  const cc = useMemo(() => chartColors(), [theme]);
 
   const cycles = feed?.cycles ?? [];
   const latest = cycles[0];
@@ -121,11 +125,11 @@ export function Dashboard() {
             {series.length < 2 ? <div className="empty">gathering cycles…</div> : (
               <ResponsiveContainer width="100%" height={230}>
                 <AreaChart data={series} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
-                  <CartesianGrid stroke="#EEE" strokeDasharray="0" vertical={false} />
-                  <XAxis dataKey="t" stroke="#9AA0A6" fontSize={11} tickLine={false} axisLine={false} minTickGap={40} />
-                  <YAxis stroke="#9AA0A6" fontSize={11} tickLine={false} axisLine={false} />
-                  <Tooltip contentStyle={{ background: '#fff', border: '1px solid #E7E7E7', borderRadius: 10,
-                    boxShadow: '0 2px 8px rgba(16,24,40,.08)', fontSize: 12.5 }} />
+                  <CartesianGrid stroke={cc.grid} strokeDasharray="0" vertical={false} />
+                  <XAxis dataKey="t" stroke={cc.axis} fontSize={11} tickLine={false} axisLine={false} minTickGap={40} />
+                  <YAxis stroke={cc.axis} fontSize={11} tickLine={false} axisLine={false} />
+                  <Tooltip contentStyle={{ background: cc.panel, border: `1px solid ${cc.border}`,
+                    borderRadius: 10, color: cc.text, fontSize: 12.5 }} />
                   {pools.map((p) => (
                     <Area key={p} type="monotone" dataKey={p} stackId="1" isAnimationActive={false}
                       stroke={POOL_COLORS[p]} fill={POOL_COLORS[p]} fillOpacity={0.14} strokeWidth={2} />

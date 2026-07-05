@@ -20,6 +20,7 @@
 
   --ink: #1A1A1A;             /* near-black primary buttons */
   --ink-hover: #000000;
+  --ink-text: #FFFFFF;         /* text on primary buttons */
 
   /* status semantics on white */
   --live: #1A5C2E;   --live-050: #EEF4EF;
@@ -35,6 +36,51 @@
   --sans: 'Inter', system-ui, -apple-system, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 }
+
+/* ---------- dark theme ---------- */
+:root[data-theme="dark"] {
+  --bg: #0E100F;
+  --surface: #14171A;
+  --elevated: #191D1F;
+  --border: #262B2E;
+  --border-strong: #363C40;
+  --text: #ECEFEE;
+  --text-2: #A2AAA6;
+  --text-3: #6E7773;
+
+  --accent: #56C07B;           /* brighter forest green for dark surfaces */
+  --accent-hover: #63C987;
+  --accent-050: #14261B;
+  --accent-100: #1C3626;
+
+  --ink: #ECEFEE;              /* light primary button on dark */
+  --ink-hover: #FFFFFF;
+  --ink-text: #14161A;         /* dark text on the light button */
+
+  --live: #56C07B;   --live-050: #14261B;
+  --hold: #8A938F;   --hold-050: #1D2124;
+  --blocked: #E0A15E; --blocked-050: #2A2117;
+  --error: #EF8A80;  --error-050: #2B1A18;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.35);
+  --shadow: 0 2px 8px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+}
+
+/* smooth theme transition (skip on inputs to avoid caret weirdness) */
+body, .card, .stat, .rcard, .sidebar, .topbar, .btn, .lp-nav, .lp-hero,
+.lp-loop-card, .lp-card, .lp-proof, .lp-road-col, .status-chip, .chip, .tag {
+  transition: background-color .18s ease, border-color .18s ease, color .18s ease;
+}
+
+/* theme toggle button */
+.theme-toggle {
+  width: 36px; height: 36px; border-radius: var(--radius);
+  border: 1px solid var(--border-strong); background: var(--bg);
+  color: var(--text-2); font-size: 15px; line-height: 1;
+  display: inline-grid; place-items: center; flex-shrink: 0;
+  transition: background .12s, border-color .12s, color .12s;
+}
+.theme-toggle:hover { background: var(--surface); color: var(--text); border-color: var(--text-3); }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body, #root { height: 100%; }
@@ -155,7 +201,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   display: inline-flex; align-items: center; gap: 7px;
 }
 .btn:hover { background: var(--surface); border-color: var(--text-3); }
-.btn-primary { background: var(--ink); border-color: var(--ink); color: #fff; }
+.btn-primary { background: var(--ink); border-color: var(--ink); color: var(--ink-text); }
 .btn-primary:hover { background: var(--ink-hover); border-color: var(--ink-hover); }
 .btn-accent { background: var(--accent); border-color: var(--accent); color: #fff; }
 .btn-accent:hover { background: var(--accent-hover); border-color: var(--accent-hover); }

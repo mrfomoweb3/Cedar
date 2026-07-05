@@ -2,6 +2,7 @@ import { api } from '../api';
 import { fmtCountdown } from '../format';
 import { usePoll } from '../hooks';
 import { StatusChip } from './StatusChip';
+import { ThemeToggle } from './ThemeToggle';
 
 export function TopBar() {
   const { data: status, error, refresh } = usePoll(api.status, 1000);
@@ -29,6 +30,7 @@ export function TopBar() {
         <span className="metric-sm muted">{status?.total_cycles ?? 0} cycles</span>
       </div>
       <div className="topbar-right">
+        <ThemeToggle />
         <button className={`btn ${paused ? 'btn-primary' : 'btn-danger'}`} onClick={toggle}>
           {paused ? '▶ Resume Agent' : '⏸ Pause Agent'}
         </button>

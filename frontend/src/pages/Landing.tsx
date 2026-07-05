@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';
 import mark from '../assets/cedar-mark.png';
+import { ThemeToggle } from '../components/ThemeToggle';
 import '../landing.css';
 
 const CONTRACT = 'dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135';
@@ -55,7 +56,10 @@ export function Landing() {
           <a href="#proof">Live proof</a>
           <a href="#roadmap">Roadmap</a>
         </nav>
-        <Link to="/app" className="lp-btn lp-btn-primary">Launch App →</Link>
+        <div className="flex gap" style={{ justifySelf: 'end', gap: 10 }}>
+          <ThemeToggle />
+          <Link to="/app" className="lp-btn lp-btn-primary">Launch App →</Link>
+        </div>
       </header>
 
       {/* hero */}
