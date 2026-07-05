@@ -7,7 +7,10 @@ data/
 .env
 *.pem
 keys/
-frontend/
+# NOTE: the image builds the dashboard from frontend/ (multi-stage), so the
+# source must stay in context. Only exclude its heavy build artifacts.
+frontend/node_modules/
+frontend/dist/
 contracts/
 tests/
 .git/
