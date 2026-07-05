@@ -29,6 +29,29 @@ from .types import POOL_IDS
 POOL_INDEX = {pid: i for i, pid in enumerate(POOL_IDS)}  # PoolA=0, PoolB=1, PoolC=2
 
 
+def _resolve_secret_key(raw: str) -> str:
+    """Resolve the signing key to a filesystem path.
+
+    Cloud platforms can't mount a .pem, so we also accept the key as base64 in
+    ``CASPER_SECRET_KEY_B64`` (set as a dashboard secret) and materialise it to a
+    private temp file the first time it's needed. A direct file path still wins.
+    """
+    raw = (raw or "").strip().strip('"').strip("'")
+    if raw and os.path.isfile(raw):
+        return raw
+    b64 = (os.getenv("CASPER_SECRET_KEY_B64") or "").strip()
+    if b64:
+        import base64
+        import tempfile
+        path = os.path.join(tempfile.gettempdir(), "cedar_casper_secret_key.pem")
+        data = base64.b64decode(b64)
+        with open(path, "wb") as fh:
+            fh.write(data)
+        os.chmod(path, 0o600)
+        return path
+    return raw
+
+
 def _resolve_client_bin() -> str:
     """Resolve the casper-client path, tolerant of a misconfigured env var
     (e.g. an inline comment leaking through .env parsing). Falls back to the
@@ -85,7 +108,7 @@ class CasperKeySigner:
         self.node_url = node_url or os.getenv("CASPER_NODE_URL",
                                               "https://node.testnet.casper.network/rpc")
         self.chain = chain or os.getenv("CASPER_CHAIN", "casper-test")
-        self.secret_key = secret_key or os.getenv("CASPER_SECRET_KEY", "")
+        self.secret_key = _resolve_secret_key(secret_key or os.getenv("CASPER_SECRET_KEY", ""))
         self.contract_hash = contract_hash or os.getenv("VAULT_ROUTER_HASH", "")
         self.client_bin = client_bin or _resolve_client_bin()
         self.payment = os.getenv("CASPER_CALL_PAYMENT", "5000000000")

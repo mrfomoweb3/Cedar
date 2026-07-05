@@ -26,7 +26,7 @@ services:
       - key: CEDAR_DATA_SOURCE
         value: casper
       - key: CEDAR_SIGNER
-        value: mock        # set to "casper" to actuate real on-chain txns
+        value: casper      # real on-chain signing (mock = fabricated hashes only)
       - key: CEDAR_AUTOSTART
         value: "1"
       - key: CEDAR_INTERVAL
@@ -53,5 +53,7 @@ services:
         sync: false
       - key: CSPR_CLOUD_API_KEY
         sync: false
-      - key: CASPER_SECRET_KEY_B64   # only needed if CEDAR_SIGNER=casper
+      # base64 of the owner's secret_key.pem — decoded to a file at startup.
+      # Generate: base64 -w0 "Account 1_secret_key.pem"   (macOS: base64 -i …)
+      - key: CASPER_SECRET_KEY_B64
         sync: false

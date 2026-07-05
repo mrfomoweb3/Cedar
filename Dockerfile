@@ -4,6 +4,17 @@
 # IMPORTANT: run with a SINGLE worker / one replica. The scheduler is an
 # in-process background thread; N workers = N autonomous loops all signing txns.
 
+# --- stage 0: build casper-client (real server-side signing) ---
+# CasperKeySigner shells out to this binary to submit reallocate deploys, so it
+# must exist in the runtime image. Pinned to 5.0.1 — the version proven against
+# the live testnet VaultRouter. Built from source so it links this image's
+# libssl3 (Debian bookworm), avoiding the apt-repo libssl1.1 mismatch.
+FROM rust:1-slim-bookworm AS casperbin
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      pkg-config libssl-dev build-essential cmake ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+RUN cargo install casper-client --version 5.0.1 --locked --root /usr/local
+
 # --- stage 1: build the dashboard (same-origin API base) ---
 FROM node:20-slim AS frontend
 WORKDIR /fe
@@ -23,8 +34,11 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends curl \
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+
+# real server-side signer binary (from the casperbin stage)
+COPY --from=casperbin /usr/local/bin/casper-client /usr/local/bin/casper-client
 
 COPY requirements.txt .
 RUN pip install -r requirements.txt
