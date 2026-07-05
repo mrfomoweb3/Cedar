@@ -47,8 +47,11 @@ COPY agent/ agent/
 COPY api/ api/
 COPY --from=frontend /fe/dist /app/frontend/dist
 
+# /data holds the SQLite fallback DB. We create the dir but deliberately do NOT
+# declare a VOLUME: Railway rejects Dockerfiles containing the VOLUME directive.
+# For persistence, attach a managed Volume mounted at /data in the platform
+# dashboard (or use DATABASE_URL / Postgres, which is preferred in production).
 RUN mkdir -p /data
-VOLUME ["/data"]
 
 EXPOSE 8000
 # Railway/Fly inject $PORT; default to 8000 locally.
