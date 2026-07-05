@@ -221,9 +221,21 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .rcard.blocked  { border-left-color: var(--blocked); }
 .rcard.hold     { border-left-color: var(--hold); }
 .rcard.failed   { border-left-color: var(--error); }
-.rcard-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; cursor: pointer; }
-.rcard-title { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13.5px; }
-.rcard-time { color: var(--text-3); font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.rcard-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; cursor: pointer; }
+.rcard.open .rcard-head { margin-bottom: 12px; }
+.rcard-title { display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 13.5px; min-width: 0; }
+.rcard-time { color: var(--text-3); font-size: 12.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rcard-meta { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.rcard-summary {
+  color: var(--text-3); font-weight: 400; font-size: 12.5px; margin-left: 4px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0;
+}
+.rcard-chev {
+  color: var(--text-3); font-size: 12px; transition: transform .18s ease; line-height: 1;
+}
+.rcard.open .rcard-chev { transform: rotate(180deg); }
+.rcard-body { animation: rcard-reveal .18s ease; }
+@keyframes rcard-reveal { from { opacity: 0; transform: translateY(-2px); } to { opacity: 1; transform: none; } }
 .rrow { display: flex; gap: 8px; color: var(--text-2); line-height: 1.8; font-size: 13px; }
 .rrow .k { color: var(--text-3); min-width: 92px; }
 .rrow .v { color: var(--text); }
