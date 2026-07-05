@@ -60,7 +60,11 @@ async def lifespan(app: FastAPI):
     scheduler.stop()
 
 
-app = FastAPI(title="Cedar Agent API", version="1.0.0", lifespan=lifespan)
+# Relocate FastAPI's auto-generated API docs off "/docs" so the SPA's own /docs
+# page (served by the catch-all) isn't shadowed by Swagger UI. The interactive
+# API docs remain available at /api-docs (Swagger) and /api-redoc (ReDoc).
+app = FastAPI(title="Cedar Agent API", version="1.0.0", lifespan=lifespan,
+              docs_url="/api-docs", redoc_url="/api-redoc")
 # CORS: default open (public read-only demo). Restrict via CEDAR_CORS_ORIGINS
 # (comma-separated) in production if you expose the write endpoints.
 _origins = os.getenv("CEDAR_CORS_ORIGINS", "*")
@@ -278,7 +282,10 @@ def _mount_frontend() -> None:
     @app.get("/{full_path:path}")
     def spa(full_path: str):
         # Never intercept API surface (defensive; those routes match first anyway).
-        if full_path.startswith(("agent", "healthz", "assets", "docs", "openapi.json")):
+        # NB: "docs" is intentionally NOT excluded — the SPA owns /docs; FastAPI's
+        # Swagger UI lives at /api-docs (see the FastAPI() construction above).
+        if full_path.startswith(("agent", "healthz", "assets", "api-docs",
+                                 "api-redoc", "openapi.json")):
             raise HTTPException(404, "not found")
         candidate = os.path.join(dist, full_path)
         if full_path and os.path.isfile(candidate):
