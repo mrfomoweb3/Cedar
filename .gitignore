@@ -25,3 +25,6 @@ target/
 # Frontend
 frontend/node_modules/
 frontend/dist/
+
+# temporary: base64 signing key for pasting into host dashboard
+casper_key_b64.txt
