@@ -33,14 +33,16 @@ class CedarAgent:
     def __init__(self, *, source: MarketDataSource, signer: Signer,
                  allocations_provider, apply_reallocation,
                  last_reallocation_provider, record_cycle,
-                 force_deterministic: bool = False):
+                 force_deterministic: bool = False, budget_store=None):
         self.source = source
         self.signer = signer
         self._record_cycle = record_cycle
         self._apply = apply_reallocation
 
         observe = make_observe_node(source, allocations_provider)
-        reason = make_reason_node(force_deterministic=force_deterministic)
+        reason = make_reason_node(force_deterministic=force_deterministic,
+                                  cooldown_provider=last_reallocation_provider,
+                                  budget_store=budget_store)
         guardrails = make_guardrails_node(last_reallocation_provider)
         actuate = make_actuate_node(signer, apply_reallocation)
         log = make_log_node(record_cycle)
@@ -116,4 +118,5 @@ def build_default_agent(store, *, force_deterministic: bool = False,
         last_reallocation_provider=store.last_reallocation_time,
         record_cycle=store.record_cycle,
         force_deterministic=force_deterministic,
+        budget_store=store,
     )

@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import time
 from typing import Optional
 
 from ..decision import deterministic_decision
@@ -243,16 +244,41 @@ def _annotate_provenance(decision: AgentDecision, snap: ValidatedSnapshot) -> Ag
     return decision
 
 
-def make_reason_node(force_deterministic: bool = False):
+def make_reason_node(force_deterministic: bool = False, cooldown_provider=None,
+                     budget_store=None):
+    """Build the reason node.
+
+    ``cooldown_provider``  -> callable returning the last EXECUTED timestamp (or
+        None). While a cooldown is still active a reallocation cannot actuate, so
+        the model call is skipped -- reasoning we could not act on is wasted spend.
+    ``budget_store``       -> object exposing ``llm_calls_today()`` and
+        ``incr_llm_call()``; enforces ``CEDAR_LLM_DAILY_BUDGET`` calls/day.
+    """
+    def _in_cooldown(policy) -> bool:
+        if cooldown_provider is None:
+            return False
+        cd = getattr(policy, "cooldown_seconds", 0) or 0
+        if cd <= 0:
+            return False
+        last = cooldown_provider()
+        return last is not None and (time.time() - last) < cd
+
+    def _budget_left() -> bool:
+        limit = int(os.getenv("CEDAR_LLM_DAILY_BUDGET", "0") or "0")
+        if limit <= 0 or budget_store is None:
+            return True
+        return budget_store.llm_calls_today() < limit
+
     def reason(state: CycleState) -> CycleState:
         snap = state["validated"]
         policy = state["policy"]
 
         use_llm = (not force_deterministic) and _api_key_present()
 
-        # Credit-saving gate: if the deterministic engine sees no actionable
-        # move, there is nothing for Claude to judge -- skip the API call.
-        # Claude is consulted only when capital might actually move.
+        # Credit-saving gates: consult the model ONLY when capital might actually
+        # move this cycle. We skip the API call when (a) the deterministic engine
+        # sees no actionable move, (b) a cooldown means we could not actuate even
+        # if it did, or (c) the daily model-call budget is spent.
         if use_llm and LLM_GATE:
             pre = deterministic_decision(snap, policy)
             if pre.action == Action.HOLD:
@@ -261,9 +287,26 @@ def make_reason_node(force_deterministic: bool = False):
                     "nothing to reallocate this cycle. The model call was skipped "
                     "to save API credits. " + pre.reasoning_trace)
                 return {"agent_decision": _annotate_provenance(pre, snap)}
+            if _in_cooldown(policy):
+                pre.reasoning_trace = (
+                    "A reallocation is warranted, but the post-move cooldown is "
+                    "still active so nothing can execute yet. The model call was "
+                    "skipped to save API credits; the cooldown guardrail will hold "
+                    "this cycle. " + pre.reasoning_trace)
+                return {"agent_decision": _annotate_provenance(
+                    _sanitize(pre, snap, policy), snap)}
+            if not _budget_left():
+                pre.reasoning_trace = (
+                    "The daily model-call budget is spent, so the deterministic "
+                    "engine decided this cycle to protect the API key. "
+                    + pre.reasoning_trace)
+                return {"agent_decision": _annotate_provenance(
+                    _sanitize(pre, snap, policy), snap)}
 
         if use_llm:
             try:
+                if budget_store is not None:
+                    budget_store.incr_llm_call()
                 raw = _call_llm(snap, policy)
             except Exception as exc:  # noqa: BLE001  -- never crash the loop on LLM error
                 # Full error goes to the server log; the trace stays plain-English.

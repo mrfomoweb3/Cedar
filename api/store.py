@@ -204,6 +204,24 @@ class Store:
     def set_next_cycle_at(self, ts: float) -> None:
         self._kv_set("next_cycle_at", str(ts))
 
+    # -- LLM usage budget (protect the reasoning API key) -----------------
+    @staticmethod
+    def _today() -> str:
+        import datetime
+        return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
+
+    def llm_calls_today(self) -> int:
+        raw = self._kv_get(f"llm_calls:{self._today()}")
+        return int(raw) if raw else 0
+
+    def incr_llm_call(self) -> int:
+        key = f"llm_calls:{self._today()}"
+        with self._lock, self._engine.begin() as conn:
+            row = conn.execute(select(kv_t.c.value).where(kv_t.c.key == key)).first()
+            n = (int(row[0]) if row else 0) + 1
+            self._upsert(conn, kv_t, {"key": key, "value": str(n)}, ["key"])
+        return n
+
     def _kv_get(self, key: str) -> Optional[str]:
         with self._engine.connect() as conn:
             row = conn.execute(select(kv_t.c.value).where(kv_t.c.key == key)).first()
