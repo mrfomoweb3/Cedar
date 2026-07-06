@@ -235,7 +235,7 @@ Minimal by design ([`contracts/vault_router/src/lib.rs`](contracts/vault_router/
 
 Pools are a fixed three-member enum (`PoolA/B/C`) matching the pre-vetted allow-list. Because entrypoints are owner-gated, **only the agent's key can actuate** — the contract enforces server-side signing as the sole write path.
 
-**Live on Casper Testnet:** [`hash-dc100561…b1828135`](https://testnet.cspr.live/contract-package/dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135)
+**Live on Casper Testnet:** [`hash-dc100561…b1828135`](https://testnet.cspr.live/contract-package/dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135) — full address record in **[DEPLOYMENT.md](DEPLOYMENT.md)**.
 
 ```bash
 cd contracts/vault_router && cargo test     # native Odra MockVM tests

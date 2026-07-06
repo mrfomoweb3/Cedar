@@ -1,4 +1,7 @@
-# Cedar — Casper Testnet Deployment
+# Cedar — Casper Testnet Deployment (on-chain record)
+
+> **This doc = the on-chain contract addresses.** For how to host the app
+> (Railway/Docker), see **[DEPLOY.md](DEPLOY.md)**.
 
 The `VaultRouter` Odra contract is deployed and verified on **Casper Testnet**
 (`casper-test`, protocol 2.0.0).

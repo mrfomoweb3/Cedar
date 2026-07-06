@@ -1,5 +1,8 @@
 # Cedar — Deploying Online
 
+> **This doc = how to host the app.** For the on-chain contract addresses and
+> deployment record, see **[DEPLOYMENT.md](DEPLOYMENT.md)**.
+
 Cedar has two deployables: the **backend** (FastAPI + the in-process autonomous
 scheduler) and the **frontend** (static dashboard). Storage is Postgres in the
 cloud (set `DATABASE_URL`) and SQLite locally.
