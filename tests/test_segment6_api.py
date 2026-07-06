@@ -60,3 +60,21 @@ def test_bad_data_demo_validation_failed(client):
     r = client.post("/agent/run-once").json()
     assert r["outcome"] == "VALIDATION_FAILED"
     assert r["tx_hash"] is None
+
+
+def test_write_endpoints_open_by_default(client):
+    # No CEDAR_ADMIN_TOKEN configured -> write endpoints stay open (dev/demo).
+    assert client.post("/agent/pause").status_code == 200
+
+
+def test_admin_token_gates_writes(client, monkeypatch):
+    monkeypatch.setenv("CEDAR_ADMIN_TOKEN", "s3cret")  # read at call time
+    # GET endpoints remain public.
+    assert client.get("/agent/status").status_code == 200
+    # Writes now require the token.
+    assert client.post("/agent/pause").status_code == 401
+    assert client.post("/agent/pause", headers={"X-Admin-Token": "wrong"}).status_code == 401
+    assert client.post("/agent/pause", headers={"X-Admin-Token": "s3cret"}).status_code == 200
+    # Bearer form is accepted too, on another write endpoint.
+    assert client.post("/agent/demo/spike",
+                       headers={"Authorization": "Bearer s3cret"}).status_code == 200

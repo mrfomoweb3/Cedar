@@ -85,9 +85,21 @@ export interface Guardrails {
   cross_source?: CrossSourceStatus;
 }
 
+// Optional admin token for locked deployments (CEDAR_ADMIN_TOKEN set on the
+// server). The owner stores it once in the browser; it's sent on write calls
+// and never baked into the bundle. Public visitors without it get read-only.
+function adminHeaders(): Record<string, string> {
+  try {
+    const t = localStorage.getItem('cedar-admin-token');
+    return t ? { 'X-Admin-Token': t } : {};
+  } catch {
+    return {};
+  }
+}
+
 async function req<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...adminHeaders() },
     ...init,
   });
   if (!res.ok) throw new Error(`${res.status} ${res.statusText} on ${path}`);

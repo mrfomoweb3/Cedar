@@ -196,6 +196,7 @@ All configuration is via environment variables (see [`.env.example`](.env.exampl
 |---|---|---|
 | `CEDAR_INTERVAL` | `120` | Seconds between cycles |
 | `CEDAR_AUTOSTART` | `1` | Start the loop on boot |
+| `CEDAR_ADMIN_TOKEN` | — | If set, write/control endpoints require it (`Authorization: Bearer` / `X-Admin-Token`); unset = open for local/demo |
 | `DATABASE_URL` | — | Postgres (production); falls back to SQLite `CEDAR_DB` |
 
 > ⚠️ **Single instance only.** The scheduler is an in-process thread — running 2 replicas means 2 agents both signing.

@@ -16,12 +16,13 @@ Endpoints (Section 7 of the build spec):
 """
 from __future__ import annotations
 
+import hmac
 import os
 import time
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, Header, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -72,6 +73,24 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"] if _origins.strip() == "*" else [o.strip() for o in _origins.split(",")],
     allow_methods=["*"], allow_headers=["*"])
+
+
+# --- admin gate for state-changing endpoints ------------------------------
+# When CEDAR_ADMIN_TOKEN is set, the write/control endpoints require it (sent as
+# `Authorization: Bearer <token>` or `X-Admin-Token: <token>`). When it is unset
+# the endpoints stay open, so local dev and the interactive public demo are
+# unaffected. Set the token to make a real-signing production deploy read-only
+# to the public while the owner still drives it via authenticated calls.
+def require_admin(authorization: str = Header(default=""),
+                  x_admin_token: str = Header(default="")):
+    token = os.getenv("CEDAR_ADMIN_TOKEN", "").strip()
+    if not token:
+        return  # open when no token is configured
+    supplied = x_admin_token.strip()
+    if not supplied and authorization.lower().startswith("bearer "):
+        supplied = authorization[7:].strip()
+    if not (supplied and hmac.compare_digest(supplied, token)):
+        raise HTTPException(401, "admin token required")
 
 
 @app.get("/healthz")
@@ -206,20 +225,20 @@ def get_policy():
 
 
 # --- write endpoints ------------------------------------------------------
-@app.post("/agent/policy")
+@app.post("/agent/policy", dependencies=[Depends(require_admin)])
 def set_policy(policy: Policy):
     store.set_policy(policy)
     return {"ok": True, "policy": policy.model_dump()}
 
 
-@app.post("/agent/pause")
+@app.post("/agent/pause", dependencies=[Depends(require_admin)])
 def pause():
     store.set_paused(True)
     store.set_status("paused")
     return {"ok": True, "paused": True}
 
 
-@app.post("/agent/resume")
+@app.post("/agent/resume", dependencies=[Depends(require_admin)])
 def resume():
     store.set_paused(False)
     store.set_status("idle")
@@ -227,7 +246,7 @@ def resume():
     return {"ok": True, "paused": False}
 
 
-@app.post("/agent/onboard")
+@app.post("/agent/onboard", dependencies=[Depends(require_admin)])
 def onboard(req: OnboardRequest):
     store.set_policy(req.policy)
     store.set_paused(False)
@@ -236,14 +255,14 @@ def onboard(req: OnboardRequest):
             "wallet_address": req.wallet_address}
 
 
-@app.post("/agent/run-once")
+@app.post("/agent/run-once", dependencies=[Depends(require_admin)])
 def run_once():
     state = scheduler.run_once()
     return {"ok": True, "cycle_id": state["cycle_id"],
             "outcome": state["outcome"].value, "tx_hash": state.get("tx_hash")}
 
 
-@app.post("/agent/demo/{name}")
+@app.post("/agent/demo/{name}", dependencies=[Depends(require_admin)])
 def demo(name: str):
     """Seed a controlled demo scenario against the mock data source."""
     if not isinstance(_source, MockMarketDataSource):
