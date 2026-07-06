@@ -152,10 +152,14 @@ class Store:
 
     @staticmethod
     def _row_to_dict(r) -> dict[str, Any]:
+        from agent.cspr_click import redact_secrets
         d = dict(r)
         d["snapshot"] = json.loads(d.pop("snapshot_json") or "null")
         d["guardrails"] = json.loads(d.pop("guardrails_json") or "[]")
         d["recheck_agrees"] = bool(d.get("recheck_agrees"))
+        # Never serve key material even if a tool echoed it into a stored field.
+        d["hold_reason"] = redact_secrets(d.get("hold_reason"))
+        d["reasoning"] = redact_secrets(d.get("reasoning"))
         return d
 
     # -- allocations -------------------------------------------------------

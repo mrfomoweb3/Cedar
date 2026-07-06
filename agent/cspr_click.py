@@ -19,6 +19,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import re
 import subprocess
 import time
 from typing import Optional, Protocol
@@ -27,6 +28,23 @@ from .types import POOL_IDS
 
 # PoolId is a fieldless Odra enum -> encoded on-chain as u8.
 POOL_INDEX = {pid: i for i, pid in enumerate(POOL_IDS)}  # PoolA=0, PoolB=1, PoolC=2
+
+
+_PEM_RE = re.compile(r"-----BEGIN[\s\S]*?-----END[^\n]*-----")
+# base64 runs of 100+ chars catch an encoded .pem (~296 chars) without touching
+# 64-char tx hashes or ordinary text.
+_B64_RE = re.compile(r"[A-Za-z0-9+/]{100,}={0,2}")
+
+
+def redact_secrets(text: Optional[str]) -> Optional[str]:
+    """Strip anything resembling key material (PEM blocks, long base64 runs) from
+    a string before it is stored or served. Defense against a tool echoing the
+    signing key into an error that would otherwise reach the public feed/audit."""
+    if not text:
+        return text
+    text = _PEM_RE.sub("[redacted-key]", text)
+    text = _B64_RE.sub("[redacted]", text)
+    return text
 
 
 def _materialize_pem(data: bytes) -> str:
@@ -142,7 +160,8 @@ class CasperKeySigner:
     def _run(self, args: list[str]) -> dict:
         proc = subprocess.run([self.client_bin, *args], capture_output=True, text=True, timeout=90)
         if proc.returncode != 0:
-            raise RuntimeError(f"casper-client failed: {proc.stderr.strip() or proc.stdout.strip()}")
+            detail = redact_secrets(proc.stderr.strip() or proc.stdout.strip())
+            raise RuntimeError(f"casper-client failed: {detail}")
         # casper-client prepends a deprecation banner for put-deploy; extract JSON.
         out = proc.stdout
         start = out.find("{")

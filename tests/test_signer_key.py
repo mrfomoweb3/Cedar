@@ -44,3 +44,13 @@ def test_real_file_path_used_as_is(tmp_path):
     p = tmp_path / "key.pem"
     p.write_bytes(PEM)
     assert _resolve_secret_key(str(p)) == str(p)
+
+
+def test_redact_secrets_strips_key_material_keeps_hashes():
+    from agent.cspr_click import redact_secrets
+    b64 = base64.b64encode(PEM).decode()
+    out = redact_secrets(f"could not read '{b64}': File name too long")
+    assert b64 not in out and "[redacted]" in out
+    assert redact_secrets("-----BEGIN X-----\nabc\n-----END X-----") == "[redacted-key]"
+    tx = "reallocated; tx " + "a1" * 32  # 64-char hash must survive
+    assert redact_secrets(tx) == tx
