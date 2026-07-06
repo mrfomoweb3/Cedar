@@ -12,7 +12,7 @@ Cedar observes DeFi pool yields on Casper, reasons over them with an LLM, and �
 [![Contract](https://img.shields.io/badge/contract-Odra%20·%20Rust-red)](contracts/vault_router/src/lib.rs)
 [![Tests](https://img.shields.io/badge/tests-43%20passing-brightgreen)](tests/)
 
-[**Live app**](https://trycedar.xyz) · [**Docs**](https://trycedar.xyz/docs) · [**Contract on explorer**](https://testnet.cspr.live/contract-package/dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135) · [**Deployment guide**](DEPLOY.md)
+[**Live app**](https://trycedar.xyz) · [**Docs**](https://trycedar.xyz/docs) · [**Contract on explorer**](https://testnet.cspr.live/contract-package/dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135) · [**On-chain record**](DEPLOYMENT.md)
 
 </div>
 
@@ -282,7 +282,7 @@ docker build -t cedar .
 docker run -p 8000:8000 --env-file .env cedar
 ```
 
-**Railway (recommended):** connect the repo, add a Postgres plugin, set the env vars (`CEDAR_SIGNER=casper`, `CASPER_SECRET_KEY_B64`, `GROQ_API_KEY`, …), deploy. Keep it at **one replica**. Full walkthrough in **[DEPLOY.md](DEPLOY.md)**.
+**Railway (recommended):** connect the repo, add a Postgres plugin, set the env vars (`CEDAR_SIGNER=casper`, `CASPER_SECRET_KEY_B64`, `GROQ_API_KEY`, …), deploy. Keep it at **one replica** — the scheduler is an in-process thread.
 
 ---
 
@@ -332,6 +332,12 @@ scripts/                  deploy_contract.sh · seed_demo.py
 **Medium term** — multi-strategy support (LP fees + staking + lending) behind the pre-vetted allow-list · notification channel (webhook/Telegram) for EXECUTED/BLOCKED events.
 
 **Positioning** — the pattern *(validated observation → grounded reasoning → deterministic recheck → named guardrails → every-path logging)* applies to any agent that touches real value.
+
+---
+
+## License
+
+[MIT](LICENSE) © 2026 — original work built for the Casper Agentic Buildathon 2026.
 
 ---
 

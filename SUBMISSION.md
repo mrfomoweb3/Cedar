@@ -17,7 +17,7 @@ defense-in-depth safety pipeline; every decision, including every refusal, is lo
 | **Deployed contract (explorer)** | https://testnet.cspr.live/contract-package/dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135 |
 | **Proof: autonomous on-chain reallocation** | https://testnet.cspr.live/deploy/ef454d281d2605ea8610a3662fd791b218921cc6d1f7932cceea63588001cd60 |
 | **Demo video** | ⬜ _TODO: paste YouTube/Loom link_ |
-| **License** | ⬜ _TODO: add LICENSE file (MIT/Apache-2.0) and link here_ |
+| **License** | [MIT](LICENSE) ✅ |
 
 ---
 
@@ -70,8 +70,8 @@ curl      localhost:8000/agent/feed              # the reasoning + refusal log
 - [x] Live deployment — https://trycedar.xyz
 - [x] README + architecture docs + `/docs` page
 - [x] Deployed contract address published
+- [x] Open-source license — [MIT](LICENSE)
 - [ ] **Demo video** — _recording in progress_
-- [ ] **Open-source license** — _to add_
 
 ---
 
