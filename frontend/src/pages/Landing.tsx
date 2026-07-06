@@ -5,7 +5,7 @@ import mark from '../assets/cedar-mark.png';
 import { ThemeToggle } from '../components/ThemeToggle';
 import '../landing.css';
 
-const CONTRACT = 'dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135';
+const CONTRACT = '2e02730283fb38e9ef03699ac81cb93e7c1194237d06b1cde95b4c12ae7b298d';
 const EXPLORER = `https://testnet.cspr.live/contract-package/${CONTRACT}`;
 
 const LOOP = [
@@ -153,7 +153,7 @@ export function Landing() {
           <div className="lp-proof-row"><span className="lp-proof-k">Contract (owner-gated)</span>
             <a href={EXPLORER} target="_blank" rel="noreferrer" className="mono lp-link">{CONTRACT.slice(0, 10)}…{CONTRACT.slice(-6)} ↗</a></div>
           <div className="lp-proof-row"><span className="lp-proof-k">Autonomous reallocation</span>
-            <a href="https://testnet.cspr.live/deploy/ef454d281d2605ea8610a3662fd791b218921cc6d1f7932cceea63588001cd60" target="_blank" rel="noreferrer" className="mono lp-link">ef454d28…cd60 ↗</a></div>
+            <a href="https://testnet.cspr.live/deploy/0b80e11e8bb6127930e259fde4767f9a2f7a7954e143cb49ef792c96b9194ac7" target="_blank" rel="noreferrer" className="mono lp-link">0b80e11e…4ac7 ↗</a></div>
           <div className="lp-proof-row"><span className="lp-proof-k">Refusal on real data</span>
             <span className="mono" style={{ color: 'var(--blocked)' }}>recheck disagreement → HOLD</span></div>
         </div>

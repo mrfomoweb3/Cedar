@@ -15,8 +15,8 @@ defense-in-depth safety pipeline; every decision, including every refusal, is lo
 | **Documentation** | https://trycedar.xyz/docs |
 | **X / socials** | https://x.com/trycedar |
 | **Source repository** | https://github.com/mrfomoweb3/Cedar |
-| **Deployed contract (explorer)** | https://testnet.cspr.live/contract-package/dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135 |
-| **Proof: autonomous on-chain reallocation** | https://testnet.cspr.live/deploy/ef454d281d2605ea8610a3662fd791b218921cc6d1f7932cceea63588001cd60 |
+| **Deployed contract (explorer)** | https://testnet.cspr.live/contract-package/2e02730283fb38e9ef03699ac81cb93e7c1194237d06b1cde95b4c12ae7b298d |
+| **Proof: on-chain reallocation (current contract)** | https://testnet.cspr.live/deploy/0b80e11e8bb6127930e259fde4767f9a2f7a7954e143cb49ef792c96b9194ac7 |
 | **Demo video** | ⬜ _TODO: paste YouTube/Loom link_ |
 | **License** | [MIT](LICENSE) ✅ |
 
@@ -27,8 +27,8 @@ defense-in-depth safety pipeline; every decision, including every refusal, is lo
 | Item | Value |
 |---|---|
 | Network | Casper **Testnet** (`casper-test`, protocol 2.0.0) |
-| Contract package hash | `hash-dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135` |
-| Owner / agent account | `0202a8ff98bbb32ec9b6f917a0d9646ba6f3a30f88aefa7290b6e3ec6be88bf4225a` |
+| Contract package hash | `hash-2e02730283fb38e9ef03699ac81cb93e7c1194237d06b1cde95b4c12ae7b298d` |
+| Owner / agent account | `01559240ecf20a26702948f0a076e85a1c430e1eb20b6627045c5cf43411ddfea2` |
 | Contract source | [contracts/vault_router/src/lib.rs](contracts/vault_router/src/lib.rs) (Odra, Rust) |
 | Full address record | [DEPLOYMENT.md](DEPLOYMENT.md) |
 

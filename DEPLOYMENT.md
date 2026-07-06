@@ -7,31 +7,30 @@
 The `VaultRouter` Odra contract is deployed and verified on **Casper Testnet**
 (`casper-test`, protocol 2.0.0).
 
-## Addresses (v2 — current, owner-gated)
+## Addresses (current — owner-gated)
+
+The signing key was **rotated** for security hygiene; these are the current,
+canonical addresses. Prior installs remain on testnet as deploy history.
 
 | Item | Value |
 |---|---|
-| **Contract package hash (v2)** | `hash-dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135` |
-| Contract hash (v2) | `contract-d7c7a0ef86d9d9b174d04d1ddbdd72b7a313152804615219da872b324e49e88c` |
-| Owner / deployer account | `0202a8ff98bbb32ec9b6f917a0d9646ba6f3a30f88aefa7290b6e3ec6be88bf4225a` |
-| Package key name | `vault_router_v2` |
+| **Contract package hash** | `hash-2e02730283fb38e9ef03699ac81cb93e7c1194237d06b1cde95b4c12ae7b298d` |
+| Owner / agent account | `01559240ecf20a26702948f0a076e85a1c430e1eb20b6627045c5cf43411ddfea2` |
+| Package key name | `vault_router` |
 
-**Explorer:** https://testnet.cspr.live/contract-package/dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135
+**Explorer:** https://testnet.cspr.live/contract-package/2e02730283fb38e9ef03699ac81cb93e7c1194237d06b1cde95b4c12ae7b298d
 
-v2 adds **owner access control**: the installing account (the agent's key) is the
+The contract is **owner-gated**: the installing account (the agent's key) is the
 sole authorized caller of `deposit`/`reallocate` (`Error::NotOwner = 4`), enforcing
-on-chain that server-side signing is Cedar's only actuation path. The v1 package
-(`hash-27131991…e493`, no access control) remains on testnet as deploy history.
+on-chain that server-side signing is Cedar's only actuation path.
 
-## Verifiable transactions
+## Verifiable transactions (current contract)
 
 | Action | Deploy hash / explorer |
 |---|---|
-| v2 install (with `init` owner ctor) | [`27883219…4f84`](https://testnet.cspr.live/deploy/278832192721777c73d5e8c13e067a6e9b062acd7f3eac9fe7a6270784014f84) |
-| v2 `deposit(PoolA, 1000)` | [`fb8e11f4…3399`](https://testnet.cspr.live/deploy/fb8e11f4cd58671ea0331eba67e2e9368d7c55d53b87f316251fc86c9af13399) |
-| v2 `reallocate(PoolA→PoolB, 400)` | [`5fe0d16c…02c3`](https://testnet.cspr.live/deploy/5fe0d16c580ff4a8a55e46358b6bec4121b96e93e7aab56c0805d1af51a302c3) |
-| v1 install | [`c25e6514…719cf`](https://testnet.cspr.live/deploy/c25e651472cb0e41f4dc87a8a9744a0e0525cbeef90f51cb8e54a2f2049719cf) |
-| v1 autonomous cycle (Claude-reasoned) | [`ef454d28…cd60`](https://testnet.cspr.live/deploy/ef454d281d2605ea8610a3662fd791b218921cc6d1f7932cceea63588001cd60) |
+| install (with `init` owner ctor) | [`a0715b52…97e6`](https://testnet.cspr.live/deploy/a0715b52f55d91e9008357515608d967bf7e3d48280093b684d4136e6c1e97e6) |
+| `deposit(PoolA, 1000)` | [`69331b0f…f0de`](https://testnet.cspr.live/deploy/69331b0f8c9b52b6cec1e997012548634f0fb06d2ce1ced72b83717e769cf0de) |
+| `reallocate(PoolA→PoolB, 400)` — tx-producing action | [`0b80e11e…4ac7`](https://testnet.cspr.live/deploy/0b80e11e8bb6127930e259fde4767f9a2f7a7954e143cb49ef792c96b9194ac7) |
 
 ## On-chain state read-back
 

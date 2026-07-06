@@ -3,7 +3,7 @@ import mark from '../assets/cedar-mark.png';
 import { ThemeToggle } from '../components/ThemeToggle';
 import '../docs.css';
 
-const CONTRACT = 'dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135';
+const CONTRACT = '2e02730283fb38e9ef03699ac81cb93e7c1194237d06b1cde95b4c12ae7b298d';
 const EXPLORER = `https://testnet.cspr.live/contract-package/${CONTRACT}`;
 
 const PIPELINE = [
