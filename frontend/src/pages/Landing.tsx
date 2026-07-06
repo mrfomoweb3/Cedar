@@ -206,6 +206,7 @@ export function Landing() {
       <footer className="lp-footer">
         <div className="lp-brand"><img src={mark} className="brand-mark-img" alt="" aria-hidden="true" /> Cedar</div>
         <div className="lp-foot-note">
+          <a href="https://x.com/trycedar" target="_blank" rel="noreferrer" className="lp-link">@trycedar on X ↗</a>
           <span className="chip testnet">CASPER TESTNET</span>
           <span className="muted">Built for the Casper Agentic Buildathon 2026</span>
         </div>

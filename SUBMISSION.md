@@ -13,6 +13,7 @@ defense-in-depth safety pipeline; every decision, including every refusal, is lo
 |---|---|
 | **Live app** | https://trycedar.xyz |
 | **Documentation** | https://trycedar.xyz/docs |
+| **X / socials** | https://x.com/trycedar |
 | **Source repository** | https://github.com/mrfomoweb3/Cedar |
 | **Deployed contract (explorer)** | https://testnet.cspr.live/contract-package/dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135 |
 | **Proof: autonomous on-chain reallocation** | https://testnet.cspr.live/deploy/ef454d281d2605ea8610a3662fd791b218921cc6d1f7932cceea63588001cd60 |

@@ -12,7 +12,7 @@ Cedar observes DeFi pool yields on Casper, reasons over them with an LLM, and �
 [![Contract](https://img.shields.io/badge/contract-Odra%20·%20Rust-red)](contracts/vault_router/src/lib.rs)
 [![Tests](https://img.shields.io/badge/tests-43%20passing-brightgreen)](tests/)
 
-[**Live app**](https://trycedar.xyz) · [**Docs**](https://trycedar.xyz/docs) · [**Contract on explorer**](https://testnet.cspr.live/contract-package/dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135) · [**On-chain record**](DEPLOYMENT.md)
+[**Live app**](https://trycedar.xyz) · [**Docs**](https://trycedar.xyz/docs) · [**X @trycedar**](https://x.com/trycedar) · [**Contract on explorer**](https://testnet.cspr.live/contract-package/dc10056192be60ae8db84e0b24e27629aec44381ba41b3bebfc89501b1828135) · [**On-chain record**](DEPLOYMENT.md)
 
 </div>
 
@@ -343,6 +343,6 @@ scripts/                  deploy_contract.sh · seed_demo.py
 
 <div align="center">
 
-**[Live app](https://trycedar.xyz)** · **[Docs](https://trycedar.xyz/docs)** · Built for the Casper Agentic Buildathon 2026
+**[Live app](https://trycedar.xyz)** · **[Docs](https://trycedar.xyz/docs)** · **[X @trycedar](https://x.com/trycedar)** · Built for the Casper Agentic Buildathon 2026
 
 </div>
