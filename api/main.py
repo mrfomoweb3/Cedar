@@ -298,7 +298,12 @@ def _mount_frontend() -> None:
     app.mount("/assets", StaticFiles(directory=os.path.join(dist, "assets")),
               name="assets")
 
-    dist_root = os.path.realpath(dist)
+    # Real files at the dist root (favicon, manifest, icons, …), computed once
+    # from the filesystem — never from a request. Serving is gated on exact
+    # membership in this fixed set, so a request path can only ever name one of
+    # these bare files: no traversal, no user-controlled path is constructed.
+    root_files = frozenset(
+        f for f in os.listdir(dist) if os.path.isfile(os.path.join(dist, f)))
 
     @app.get("/{full_path:path}")
     def spa(full_path: str):
@@ -308,13 +313,9 @@ def _mount_frontend() -> None:
         if full_path.startswith(("agent", "healthz", "assets", "api-docs",
                                  "api-redoc", "openapi.json")):
             raise HTTPException(404, "not found")
-        # Resolve and confine to the dist root — rejects ../ traversal, absolute
-        # paths, and symlink escapes before touching the filesystem.
-        candidate = os.path.realpath(os.path.join(dist_root, full_path))
-        inside = candidate == dist_root or candidate.startswith(dist_root + os.sep)
-        if full_path and inside and os.path.isfile(candidate):
-            return FileResponse(candidate)
-        return FileResponse(index)  # SPA deep-link fallback
+        if full_path in root_files:
+            return FileResponse(os.path.join(dist, full_path))
+        return FileResponse(index)  # SPA deep-link fallback (/app, /docs, …)
 
 
 _mount_frontend()
