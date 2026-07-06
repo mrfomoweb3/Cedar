@@ -29,26 +29,49 @@ from .types import POOL_IDS
 POOL_INDEX = {pid: i for i, pid in enumerate(POOL_IDS)}  # PoolA=0, PoolB=1, PoolC=2
 
 
-def _resolve_secret_key(raw: str) -> str:
-    """Resolve the signing key to a filesystem path.
+def _materialize_pem(data: bytes) -> str:
+    """Write PEM bytes to a private temp file and return its path."""
+    import tempfile
+    path = os.path.join(tempfile.gettempdir(), "cedar_casper_secret_key.pem")
+    with open(path, "wb") as fh:
+        fh.write(data)
+    os.chmod(path, 0o600)
+    return path
 
-    Cloud platforms can't mount a .pem, so we also accept the key as base64 in
-    ``CASPER_SECRET_KEY_B64`` (set as a dashboard secret) and materialise it to a
-    private temp file the first time it's needed. A direct file path still wins.
+
+def _resolve_secret_key(raw: str) -> str:
+    """Resolve the signing key to a filesystem path, tolerant of how a host
+    supplies it. ``casper-client`` needs a *file path*, but cloud dashboards
+    can't mount a .pem, so a key may arrive as:
+
+      * a file path (used as-is),
+      * raw PEM text pasted into ``CASPER_SECRET_KEY``,
+      * base64 of the .pem in ``CASPER_SECRET_KEY_B64`` **or** (a common mix-up)
+        pasted straight into ``CASPER_SECRET_KEY``.
+
+    Any non-path form is decoded and materialised to a private temp file, so a
+    misplaced value still works instead of failing with 'file name too long'.
     """
+    import base64
+
     raw = (raw or "").strip().strip('"').strip("'")
+    # 1. an actual file path wins
     if raw and os.path.isfile(raw):
         return raw
-    b64 = (os.getenv("CASPER_SECRET_KEY_B64") or "").strip()
-    if b64:
-        import base64
-        import tempfile
-        path = os.path.join(tempfile.gettempdir(), "cedar_casper_secret_key.pem")
-        data = base64.b64decode(b64)
-        with open(path, "wb") as fh:
-            fh.write(data)
-        os.chmod(path, 0o600)
-        return path
+
+    # 2. resolve PEM bytes from whatever we were handed, in priority order
+    for candidate in (raw, (os.getenv("CASPER_SECRET_KEY_B64") or "").strip()):
+        if not candidate:
+            continue
+        if candidate.startswith("-----BEGIN"):           # raw PEM text
+            return _materialize_pem(candidate.encode())
+        try:                                             # base64-encoded PEM
+            data = base64.b64decode(candidate, validate=True)
+        except Exception:  # noqa: BLE001
+            continue
+        if data.startswith(b"-----BEGIN") or b"PRIVATE KEY" in data[:80]:
+            return _materialize_pem(data)
+
     return raw
 
 
