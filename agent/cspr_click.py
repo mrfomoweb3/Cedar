@@ -48,12 +48,22 @@ def redact_secrets(text: Optional[str]) -> Optional[str]:
 
 
 def _materialize_pem(data: bytes) -> str:
-    """Write PEM bytes to a private temp file and return its path."""
+    """Write PEM bytes to a private temp file and return its path.
+
+    casper-client can only read the key from a file, so a file is unavoidable;
+    it is created 0600 atomically (no open→chmod window) inside a fresh 0700
+    directory, so no other user can ever observe the bytes.
+    """
     import tempfile
-    path = os.path.join(tempfile.gettempdir(), "cedar_casper_secret_key.pem")
-    with open(path, "wb") as fh:
-        fh.write(data)
-    os.chmod(path, 0o600)
+    keydir = os.path.join(tempfile.gettempdir(), "cedar_keys")
+    os.makedirs(keydir, mode=0o700, exist_ok=True)
+    os.chmod(keydir, 0o700)
+    path = os.path.join(keydir, "casper_secret_key.pem")
+    fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    try:
+        os.write(fd, data)
+    finally:
+        os.close(fd)
     return path
 
 

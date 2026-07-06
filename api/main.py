@@ -298,6 +298,8 @@ def _mount_frontend() -> None:
     app.mount("/assets", StaticFiles(directory=os.path.join(dist, "assets")),
               name="assets")
 
+    dist_root = os.path.realpath(dist)
+
     @app.get("/{full_path:path}")
     def spa(full_path: str):
         # Never intercept API surface (defensive; those routes match first anyway).
@@ -306,8 +308,11 @@ def _mount_frontend() -> None:
         if full_path.startswith(("agent", "healthz", "assets", "api-docs",
                                  "api-redoc", "openapi.json")):
             raise HTTPException(404, "not found")
-        candidate = os.path.join(dist, full_path)
-        if full_path and os.path.isfile(candidate):
+        # Resolve and confine to the dist root — rejects ../ traversal, absolute
+        # paths, and symlink escapes before touching the filesystem.
+        candidate = os.path.realpath(os.path.join(dist_root, full_path))
+        inside = candidate == dist_root or candidate.startswith(dist_root + os.sep)
+        if full_path and inside and os.path.isfile(candidate):
             return FileResponse(candidate)
         return FileResponse(index)  # SPA deep-link fallback
 
