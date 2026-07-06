@@ -12,7 +12,7 @@ Cedar observes DeFi pool yields on Casper, reasons over them with an LLM, and �
 [![Contract](https://img.shields.io/badge/contract-Odra%20·%20Rust-red)](contracts/vault_router/src/lib.rs)
 [![Tests](https://img.shields.io/badge/tests-43%20passing-brightgreen)](tests/)
 
-[**Live app**](https://trycedar.xyz) · [**Docs**](https://trycedar.xyz/docs) · [**X @trycedar**](https://x.com/trycedar) · [**Contract on explorer**](https://testnet.cspr.live/contract-package/2e02730283fb38e9ef03699ac81cb93e7c1194237d06b1cde95b4c12ae7b298d) · [**On-chain record**](DEPLOYMENT.md)
+[**Live app**](https://trycedar.xyz) · [**Docs**](https://trycedar.xyz/docs) · [**X @trycedar**](https://x.com/trycedar) · [**Contract on explorer**](https://testnet.cspr.live/contract-package/2e02730283fb38e9ef03699ac81cb93e7c1194237d06b1cde95b4c12ae7b298d) · [**On-chain record**](DEPLOYMENT.md) · [**Test it in 5 min**](TESTING.md)
 
 </div>
 
