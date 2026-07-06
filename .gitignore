@@ -28,3 +28,8 @@ frontend/dist/
 
 # temporary: base64 signing key for pasting into host dashboard
 casper_key_b64.txt
+
+# demo video build artifacts
+demo-video/node_modules/
+demo-video/out/
+demo-video/public/audio/

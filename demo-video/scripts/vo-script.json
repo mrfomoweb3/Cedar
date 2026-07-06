@@ -1,0 +1,33 @@
+{
+  "voice_note": "Narrator: confident, warm, measured pace. ElevenLabs 'Brian' (nPczCjzI2devNBz1zQrb), model eleven_multilingual_v2, stability 0.5, similarity 0.75, style 0.2.",
+  "scenes": [
+    {
+      "id": "intro",
+      "text": "This is Cedar. An autonomous yield-routing agent on the Casper network. It watches DeFi pools, reasons with a language model, and signs its own on-chain transactions. No human in the loop. And that is exactly why it was built differently."
+    },
+    {
+      "id": "problem",
+      "text": "Most AI agent demos are a language model wired straight to an action. That's fine for a chatbot. It's reckless for money. An autonomous agent that touches capital is only as good as the things it refuses to do. So Cedar puts the model inside a pipeline — where every other link can veto it."
+    },
+    {
+      "id": "loop",
+      "text": "Every cycle runs six steps. Observe: pull live pool yields, and read allocations directly from contract storage. Validate: reject bad data — a nine thousand percent APY is a broken feed, not a jackpot. Reason: Llama three point three decides — hold, or reallocate — seeing only the validated snapshot. Recheck: a deterministic engine re-derives the same decision from the same data. If they disagree, Cedar refuses. Guardrails: cooldown, position cap, cost versus gain, and an anomaly breaker. Then, and only then — actuate. Sign the transaction, and submit it to Casper."
+    },
+    {
+      "id": "safety",
+      "text": "The safety is not a prompt. It's code. Every number the model cites is checked against the real snapshot — invent a figure, and the cycle is force-held. Single-source data is flagged as unverified, never silently trusted. And every decision — including every refusal — is logged with the exact guardrail that fired."
+    },
+    {
+      "id": "contract",
+      "text": "On chain, Cedar actuates through VaultRouter — a smart contract written in Rust with the Odra framework, deployed on Casper Testnet. Every state-changing entry point is owner-gated. Only the agent's key can call reallocate — the contract itself enforces that. And this is not simulated. Here is a real reallocation, verifiable on the explorer: pool A to pool B, signed autonomously, executed on chain."
+    },
+    {
+      "id": "live",
+      "text": "It's running live, right now, at try cedar dot x-y-z. The dashboard streams every cycle: executed moves with their transaction hashes, blocked moves with the guardrail that stopped them, and the agent's reasoning in plain English. You can pause it, tune the policy, and audit every decision it has ever made."
+    },
+    {
+      "id": "outro",
+      "text": "Cedar. Autonomous capital movement — with a built-in no. Open source, MIT licensed, live on Casper Testnet. Built for the Casper Agentic Buildathon."
+    }
+  ]
+}
