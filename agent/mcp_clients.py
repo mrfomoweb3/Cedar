@@ -48,6 +48,7 @@ class MockMarketDataSource:
             "PoolC": 7.0,
         }
         self._gas = 0.12
+        self._spike: Optional[tuple[str, float]] = None
         self._bad_reading: Optional[tuple[str, float]] = None
         self._cross_divergence: Optional[tuple[str, float]] = None
 
@@ -56,9 +57,16 @@ class MockMarketDataSource:
         with self._lock:
             self._apy[pool_id] = apy
 
-    def spike(self, pool_id: str, apy: float) -> None:
-        """Seed a controlled APY spike (demo scenario 1)."""
-        self.set_apy(pool_id, apy)
+    def spike(self, pool_id: str, apy: float = 0.0) -> None:
+        """Seed a controlled APY spike (demo scenario 1).
+
+        Deferred to the next snapshot and applied *after* the random walk, so it
+        lands clearly above every other pool (>> the policy's min APY delta)
+        regardless of drift. This keeps the dashboard's Spike button reliable:
+        it always produces a REALLOCATE this cycle. ``apy`` acts as a floor.
+        """
+        with self._lock:
+            self._spike = (pool_id, apy)
 
     def inject_bad_reading(self, pool_id: str, apy: float) -> None:
         """Force an out-of-bounds APY on the next snapshot (validation demo)."""
@@ -73,10 +81,17 @@ class MockMarketDataSource:
     # -- read --------------------------------------------------------------
     def get_snapshot(self, allocations: dict[str, float]) -> MarketSnapshot:
         with self._lock:
-            # gentle random walk so successive cycles differ
+            # gentle random walk so successive cycles differ, kept within a
+            # realistic testnet band (a pool can't drift to an absurd APY)
             for pid in POOL_IDS:
                 drift = self._rng.uniform(-0.3, 0.3)
-                self._apy[pid] = round(max(0.5, self._apy[pid] + drift), 3)
+                self._apy[pid] = round(min(12.0, max(4.0, self._apy[pid] + drift)), 3)
+
+            # apply a requested spike AFTER the walk so it clearly tops the band
+            if self._spike is not None:
+                pid, floor = self._spike
+                self._apy[pid] = round(max(floor, max(self._apy.values()) + 6.0), 3)
+                self._spike = None
 
             pools: dict[str, PoolReading] = {}
             cross: dict[str, float] = {}
