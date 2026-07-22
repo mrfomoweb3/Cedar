@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 odra = { version = "2.1.0", default-features = false }
+odra-casper-livenet-env = { version = "2.1.0", optional = true }
 
 [dev-dependencies]
 odra-test = "2.1.0"
@@ -12,15 +13,20 @@ odra-test = "2.1.0"
 [build-dependencies]
 odra-build = "2.1.0"
 
-# rlib -> native unit tests (Odra MockVM); cdylib -> the Casper wasm produced by
-# `cargo odra build`, which compiles this lib with --cfg odra_module="VaultRouter"
-# to switch on the generated #[no_mangle] contract entrypoints.
+[features]
+livenet = ["dep:odra-casper-livenet-env"]
+
 [lib]
 crate-type = ["rlib", "cdylib"]
+
+[[bin]]
+name = "cedar_livenet"
+path = "bin/livenet.rs"
+required-features = ["livenet"]
 
 [profile.release]
 codegen-units = 1
 lto = true
-opt-level = "z"      # optimize for size — smaller wasm => cheaper on-chain install
-strip = true         # drop symbol/debug names
-panic = "abort"      # no unwinding machinery in the wasm
+opt-level = "z"
+strip = true
+panic = "abort"
