@@ -25,29 +25,23 @@ fn main() {
     let address = Address::from_str(PACKAGE).expect("valid package hash");
     let mut vault = VaultRouter::load(&env, address);
 
-    // (the contract's main purse only exists once the first payable deposit
-    // funds it, so we read backing *after* depositing)
+    // Fund the vault with a realistic demo portfolio of REAL CSPR, split across
+    // the three pools. Payable calls run through Odra's proxy (creates a cargo
+    // purse + transfer), so each needs a larger gas budget.
+    let deposits = [(PoolId::PoolA, 300u64), (PoolId::PoolB, 100u64), (PoolId::PoolC, 50u64)];
+    for (pool, cspr) in deposits {
+        env.set_gas(25 * CSPR);
+        vault.with_tokens(U512::from(cspr * CSPR)).deposit(pool);
+        println!("deposited {} CSPR -> backing now {}", cspr, vault.get_backing());
+    }
 
-    // 1. deposit 20 real CSPR into PoolA (payable — motes now custodied).
-    // Payable calls run through Odra's proxy (creates a cargo purse + transfer),
-    // so they need a larger gas budget than a plain entrypoint.
-    env.set_gas(25 * CSPR);
-    vault
-        .with_tokens(U512::from(20 * CSPR))
-        .deposit(PoolId::PoolA);
-    println!("backing after deposit: {}", vault.get_backing());
-
-    // 2. reallocate 8 CSPR PoolA -> PoolB (the autonomous action)
-    env.set_gas(6 * CSPR);
-    vault.reallocate(PoolId::PoolA, PoolId::PoolB, U512::from(8 * CSPR));
-    println!("PoolA earmark:         {}", vault.get_allocation(PoolId::PoolA));
-    println!("PoolB earmark:         {}", vault.get_allocation(PoolId::PoolB));
-
-    // 3. withdraw 5 real CSPR from PoolB back to the owner
-    env.set_gas(15 * CSPR);
-    vault.withdraw(PoolId::PoolB, U512::from(5 * CSPR), env.caller());
-    println!("backing after withdraw:{}", vault.get_backing());
-    println!("total earmarks:        {}", vault.get_total_value());
+    println!(
+        "earmarks: PoolA={} PoolB={} PoolC={}",
+        vault.get_allocation(PoolId::PoolA),
+        vault.get_allocation(PoolId::PoolB),
+        vault.get_allocation(PoolId::PoolC)
+    );
+    println!("total backing (motes): {}", vault.get_backing());
     println!(
         "invariant backing==earmarks: {}",
         vault.get_backing() == vault.get_total_value()
