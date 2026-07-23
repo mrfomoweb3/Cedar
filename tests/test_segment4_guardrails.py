@@ -29,13 +29,37 @@ def test_recheck_agrees_over_varied_cycles():
         assert out["recheck_agrees"] is True
 
 
-def test_recheck_flags_disagreement():
-    snap = _validated(7, 13, 7)  # deterministic says REALLOCATE
+def test_recheck_allows_hold_and_valid_alternative_moves():
+    """The recheck enforces a safety ENVELOPE, not the greedy move: a HOLD is
+    always safe, and a valid non-greedy move (e.g. a mandate-driven partial or
+    an alternative up-yielding target) is allowed."""
     policy = Policy(min_apy_delta=1.0)
-    # agent wrongly says HOLD
-    agent = AgentDecision(action=Action.HOLD, reasoning_trace="lazy hold")
-    out = recheck({"validated": snap, "policy": policy, "agent_decision": agent})
-    assert out["recheck_agrees"] is False
+    snap = _validated(7, 13, 9)  # greedy = PoolA->PoolB
+    # HOLD is always within the envelope now.
+    hold = AgentDecision(action=Action.HOLD, reasoning_trace="conservative hold")
+    assert recheck({"validated": snap, "policy": policy,
+                    "agent_decision": hold})["recheck_agrees"] is True
+    # A different-but-safe target (PoolA->PoolC, still up-yield, clears delta).
+    alt = AgentDecision(action=Action.REALLOCATE, from_pool="PoolA", to_pool="PoolC",
+                        amount=50.0, reasoning_trace="diversify into PoolC")
+    assert recheck({"validated": snap, "policy": policy,
+                    "agent_decision": alt})["recheck_agrees"] is True
+
+
+def test_recheck_vetoes_unsafe_moves():
+    """Unsafe reallocations are still hard-blocked (the last line of defense)."""
+    policy = Policy(min_apy_delta=1.0)
+    snap = _validated(7, 13, 9, alloc=(400, 400, 200))
+    # moving INTO a lower-yield pool (PoolB 13% -> PoolC 9%) is irrational
+    downhill = AgentDecision(action=Action.REALLOCATE, from_pool="PoolB",
+                             to_pool="PoolC", amount=50.0, reasoning_trace="bad")
+    assert recheck({"validated": snap, "policy": policy,
+                    "agent_decision": downhill})["recheck_agrees"] is False
+    # moving more than the source holds
+    overdraw = AgentDecision(action=Action.REALLOCATE, from_pool="PoolC",
+                             to_pool="PoolB", amount=9999.0, reasoning_trace="bad")
+    assert recheck({"validated": snap, "policy": policy,
+                    "agent_decision": overdraw})["recheck_agrees"] is False
 
 
 def test_cooldown_blocks_recent_reallocation():

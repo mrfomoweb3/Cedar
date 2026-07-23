@@ -46,22 +46,28 @@ LLM_GATE = os.getenv("CEDAR_LLM_GATE", "1") == "1"
 
 SYSTEM_PROMPT = """You are a yield-routing decision engine. You will be given:
 1. A validated market snapshot (pool APYs, current allocation, gas estimate)
-2. The active policy (min APY delta, max reallocation %, cooldown status, allowed pools)
+2. The active policy (min APY delta, max reallocation %, allowed pools)
+3. Optionally, a plain-English MANDATE: a standing instruction from the operator.
 
 You must decide: HOLD or REALLOCATE.
 You may ONLY reference pools and values present in the snapshot provided.
 
-Decision rules (a deterministic engine independently applies the same rules and
-must agree, or the move is blocked):
-- REALLOCATE only if the highest-APY allowed pool beats the LOWEST-APY pool that
-  currently holds funds by at least the policy's min APY delta.
-- from_pool = the currently-held pool (allocation > 0) with the LOWEST APY.
-- to_pool = the allowed pool with the HIGHEST APY.
-- amount = the smaller of that from_pool's allocation and (max_reallocation_pct
-  of total_value).
-- Otherwise HOLD.
+A non-LLM recheck enforces a SAFETY ENVELOPE on whatever you propose — it does
+NOT dictate the exact move, but it WILL block anything unsafe. Your move must:
+- go from a pool that currently holds funds, to a DIFFERENT allowed pool,
+- move to a pool with a STRICTLY HIGHER APY (never into a worse-yielding pool),
+- clear the policy's min APY delta on that edge,
+- move no more than max_reallocation_pct of total_value (you may move LESS).
 
-Justify your decision citing the specific figures given.
+Within that envelope you have judgment. Default behavior (no mandate) is to
+capture the best available edge: from the lowest-APY held pool to the highest-APY
+allowed pool. But if a MANDATE is present, HONOR IT — e.g. it may ask you to stay
+conservative, keep a minimum in a pool for diversification, move partial amounts,
+prefer a specific pool, or avoid small edges. Apply the mandate as long as the
+result still satisfies the safety envelope above; if the mandate would require an
+unsafe move, HOLD instead and say why.
+
+Justify your decision citing the specific figures given (and the mandate, if any).
 reasoning_trace rules: 2 to 4 short plain-English sentences. No brackets,
 no markdown, no formulas or arrow notation - write it so a non-technical
 reader can follow the decision.
@@ -90,6 +96,7 @@ def _snapshot_payload(snap: ValidatedSnapshot, policy: Policy) -> str:
             "max_reallocation_pct": policy.max_reallocation_pct,
             "allowed_pools": policy.allowed_pools,
         },
+        "mandate": policy.mandate or "(none — capture the best available edge)",
     }, indent=2)
 
 
@@ -199,6 +206,9 @@ def _trace_numbers_grounded(trace: str, snap: ValidatedSnapshot,
     known_apys = {round(r.apy, 3) for r in snap.pools.values()}
     known_pcts = set(known_apys) | {round(policy.min_apy_delta, 3),
                                     round(policy.max_reallocation_pct, 3)}
+    # figures the operator wrote into the mandate are legitimate to cite
+    for mm in re.finditer(r"\d+\.?\d*", policy.mandate or ""):
+        known_pcts.add(round(float(mm.group()), 3))
     # legitimate pairwise APY deltas (e.g. "delta 8.744%")
     deltas = {round(abs(a - b), 3) for a in known_apys for b in known_apys}
     # legitimate portfolio shares (allocation/total, decision amount/total)

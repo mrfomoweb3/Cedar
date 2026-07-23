@@ -8,6 +8,7 @@ export interface Policy {
   max_reallocation_pct: number;
   cooldown_seconds: number;
   allowed_pools: string[];
+  mandate: string;
   apy_min_bound: number;
   apy_max_bound: number;
   freshness_seconds: number;

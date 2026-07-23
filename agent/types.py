@@ -113,6 +113,12 @@ class Policy(BaseModel):
         description="Minimum time between two reallocations.",
     )
     allowed_pools: list[str] = Field(default_factory=lambda: list(POOL_IDS))
+    mandate: str = Field(
+        default="",
+        description="Plain-English standing instruction the LLM must honor within "
+        "the safety envelope, e.g. 'stay conservative; keep some in PoolC for "
+        "diversification; don't chase edges under 2pp.' Empty = pure yield-max.",
+    )
     # Validation bounds
     apy_min_bound: float = 0.0
     apy_max_bound: float = 50.0

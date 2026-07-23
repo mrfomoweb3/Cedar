@@ -61,6 +61,22 @@ export function PolicyForm({ policy, onChange }: Props) {
         ))}
         <div className="hint">Guardrail: pre-vetted testnet pools only — no arbitrary pool injection.</div>
       </div>
+
+      <div className="field">
+        <label>Mandate — plain-English standing instruction</label>
+        <textarea
+          rows={3}
+          value={policy.mandate ?? ''}
+          placeholder="e.g. Stay conservative. Keep at least 20% in PoolC for diversification, move partial amounts, and don't chase edges under 2pp."
+          onChange={(e) => set({ mandate: e.target.value })}
+          style={{ width: '100%', resize: 'vertical', fontFamily: 'inherit', fontSize: 14, padding: 10 }}
+        />
+        <div className="hint">
+          The LLM honors this in plain language — but only <b>within the safety envelope</b>:
+          the deterministic recheck still vetoes any move that isn't valid, up-yielding, and within the cap.
+          Leave blank for pure yield-maximization.
+        </div>
+      </div>
     </div>
   );
 }

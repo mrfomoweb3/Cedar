@@ -1,14 +1,17 @@
-"""RECHECK node (non-LLM): independently recompute the decision and compare.
+"""RECHECK node (non-LLM): independently validate the proposed move is safe.
 
-Recomputes HOLD/REALLOCATE from the same ValidatedSnapshot + Policy using the
-deterministic engine, then compares direction against the agent's decision. On
-disagreement -> force HOLD and flag. Should basically never fire if REASON is
-built correctly; it's the last line of defense and a clean demo beat.
+The deterministic engine enforces a **safety envelope**, not a single dictated
+move: whatever the reasoner proposed must be safe and rational (valid pools,
+funds actually held, within the position cap, and a real positive APY edge that
+clears the threshold). This lets the LLM apply plain-English-mandate judgment
+(partial moves, diversification, an alternative valid target) while the recheck
+still hard-vetoes anything unsafe — force HOLD on failure. Last line of defense
+and a clean demo beat.
 """
 from __future__ import annotations
 
-from ..decision import deterministic_decision
-from ..types import Action, CycleState
+from ..decision import deterministic_decision, within_safety_envelope
+from ..types import CycleState
 
 
 def recheck(state: CycleState) -> CycleState:
@@ -16,14 +19,11 @@ def recheck(state: CycleState) -> CycleState:
     policy = state["policy"]
     agent = state["agent_decision"]
 
+    # The greedy-optimal move, kept for reference/logging and the trace.
     independent = deterministic_decision(snap, policy)
 
-    # Agreement is on the ACTION direction. (Exact amount can differ; the
-    # position-cap guardrail bounds it, so we don't require amount equality.)
-    agrees = independent.action == agent.action
-    # If both say REALLOCATE, also require same direction of movement.
-    if agrees and agent.action == Action.REALLOCATE:
-        agrees = (independent.from_pool == agent.from_pool
-                  and independent.to_pool == agent.to_pool)
+    # Agreement = the agent's proposal sits inside the safety envelope.
+    agrees, reason = within_safety_envelope(agent, snap, policy)
+    independent.reasoning_trace = f"[recheck] {reason} | greedy: {independent.reasoning_trace}"
 
     return {"recheck_decision": independent, "recheck_agrees": agrees}
