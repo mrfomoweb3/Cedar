@@ -7,30 +7,43 @@
 The `VaultRouter` Odra contract is deployed and verified on **Casper Testnet**
 (`casper-test`, protocol 2.0.0).
 
-## Addresses (current — owner-gated)
+## Addresses (v3 — real CSPR custody, owner-gated)
 
-The signing key was **rotated** for security hygiene; these are the current,
-canonical addresses. Prior installs remain on testnet as deploy history.
+**v3 custodies real CSPR** (not just records): `deposit` is payable and the
+contract actually holds the attached motes; `withdraw` sends real CSPR back out;
+an on-chain invariant guarantees the per-pool earmarks are backed **1:1** by the
+contract's true CSPR balance.
 
 | Item | Value |
 |---|---|
-| **Contract package hash** | `hash-2e02730283fb38e9ef03699ac81cb93e7c1194237d06b1cde95b4c12ae7b298d` |
+| **Contract package hash (v3)** | `hash-afdbf6c32a6f6a54ec5aff5ebd8dbd2a92f672cd60e089cf7cb50ed55bc71d7c` |
 | Owner / agent account | `01559240ecf20a26702948f0a076e85a1c430e1eb20b6627045c5cf43411ddfea2` |
-| Package key name | `vault_router` |
+| Package key name | `vault_router_v3` |
 
-**Explorer:** https://testnet.cspr.live/contract-package/2e02730283fb38e9ef03699ac81cb93e7c1194237d06b1cde95b4c12ae7b298d
+**Explorer:** https://testnet.cspr.live/contract-package/afdbf6c32a6f6a54ec5aff5ebd8dbd2a92f672cd60e089cf7cb50ed55bc71d7c
 
 The contract is **owner-gated**: the installing account (the agent's key) is the
-sole authorized caller of `deposit`/`reallocate` (`Error::NotOwner = 4`), enforcing
-on-chain that server-side signing is Cedar's only actuation path.
+sole authorized caller of `deposit`/`reallocate`/`withdraw` (`Error::NotOwner = 4`),
+enforcing on-chain that server-side signing is Cedar's only actuation path.
 
-## Verifiable transactions (current contract)
+## Verifiable transactions (v3 — real custody lifecycle)
 
-| Action | Deploy hash / explorer |
-|---|---|
-| install (with `init` owner ctor) | [`a0715b52…97e6`](https://testnet.cspr.live/deploy/a0715b52f55d91e9008357515608d967bf7e3d48280093b684d4136e6c1e97e6) |
-| `deposit(PoolA, 1000)` | [`69331b0f…f0de`](https://testnet.cspr.live/deploy/69331b0f8c9b52b6cec1e997012548634f0fb06d2ce1ced72b83717e769cf0de) |
-| `reallocate(PoolA→PoolB, 400)` — tx-producing action | [`0b80e11e…4ac7`](https://testnet.cspr.live/deploy/0b80e11e8bb6127930e259fde4767f9a2f7a7954e143cb49ef792c96b9194ac7) |
+Each executed without revert on `casper-test`; together they prove the contract
+holds and moves **real CSPR** (deposited 20, withdrew 5 → 15 CSPR custodied),
+with `get_backing() == get_total_value()` verified true on-chain.
+
+| Action | Effect | Transaction |
+|---|---|---|
+| install (`init` owner ctor) | v3 deployed, caller = owner | [`d1bd4d3b…1896`](https://testnet.cspr.live/deploy/d1bd4d3b6ba20a3b01fe7317663ab91c318b340a2eb452262d5c192cf05a1896) |
+| **`deposit(PoolA)`** payable, +20 CSPR | backing **0 → 20 CSPR** (real custody) | [`d9be9302…dcf6`](https://testnet.cspr.live/transaction/d9be93020cdd8c3d599c74626430bb6c0e3c3284e61d37223efa825149d0dcf6) |
+| **`reallocate(PoolA→PoolB, 8)`** — the agent's action | earmarks 12 / 8, backing unchanged | [`a4536350…67c0`](https://testnet.cspr.live/transaction/a453635090e1ab68ec360b98380a7ebc716f1aa40439f537bfdf5d7f4f0b67c0) |
+| **`withdraw(PoolB, 5)`** | real motes leave → backing **20 → 15 CSPR** | [`be652b91…cd28`](https://testnet.cspr.live/transaction/be652b91158607afc5501b689afae44e16b437db47ddea3f5537f273c8d2cd28) |
+
+### Prior version (v2 — records-only, deploy history)
+
+`hash-2e02730283fb38e9ef03699ac81cb93e7c1194237d06b1cde95b4c12ae7b298d` — the
+first owner-gated router (tracked allocations as numbers). Superseded by v3's
+real custody; remains on testnet as history.
 
 ## On-chain state read-back
 

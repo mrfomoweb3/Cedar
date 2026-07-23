@@ -1,9 +1,10 @@
 # Cedar — Casper Agentic Buildathon 2026 Submission
 
-**Cedar is an autonomous yield-routing agent that moves capital on Casper — and knows when to refuse.**
-It observes DeFi pool yields, reasons over them with an LLM, and — with **no human in the loop** —
-signs and submits real on-chain reallocations to an owner-gated smart contract. Every action clears a
-defense-in-depth safety pipeline; every decision, including every refusal, is logged and auditable.
+**Cedar is the only agent on Casper that moves *real capital* under a mandate it can *prove* it obeyed.**
+It custodies real CSPR in an owner-gated Odra vault, observes DeFi pool yields, reasons over them with an
+LLM, and — with **no human in the loop** — signs and submits its own on-chain reallocations. Every action
+clears a defense-in-depth safety pipeline where every link can veto the model; every decision, including
+every refusal, is logged and auditable. Not a chatbot with a wallet — **accountable autonomy.**
 
 ---
 
@@ -15,8 +16,10 @@ defense-in-depth safety pipeline; every decision, including every refusal, is lo
 | **Documentation** | https://trycedar.xyz/docs |
 | **X / socials** | https://x.com/trycedar |
 | **Source repository** | https://github.com/mrfomoweb3/Cedar |
-| **Deployed contract (explorer)** | https://testnet.cspr.live/contract-package/2e02730283fb38e9ef03699ac81cb93e7c1194237d06b1cde95b4c12ae7b298d |
-| **Proof: on-chain reallocation (current contract)** | https://testnet.cspr.live/deploy/0b80e11e8bb6127930e259fde4767f9a2f7a7954e143cb49ef792c96b9194ac7 |
+| **Deployed contract (v3, real custody)** | https://testnet.cspr.live/contract-package/afdbf6c32a6f6a54ec5aff5ebd8dbd2a92f672cd60e089cf7cb50ed55bc71d7c |
+| **Proof: real deposit (custody)** | https://testnet.cspr.live/transaction/d9be93020cdd8c3d599c74626430bb6c0e3c3284e61d37223efa825149d0dcf6 |
+| **Proof: autonomous reallocate** | https://testnet.cspr.live/transaction/a453635090e1ab68ec360b98380a7ebc716f1aa40439f537bfdf5d7f4f0b67c0 |
+| **Proof: real withdraw** | https://testnet.cspr.live/transaction/be652b91158607afc5501b689afae44e16b437db47ddea3f5537f273c8d2cd28 |
 | **Demo video** | ⬜ _TODO: paste YouTube/Loom link_ |
 | **License** | [MIT](LICENSE) ✅ |
 
@@ -27,10 +30,11 @@ defense-in-depth safety pipeline; every decision, including every refusal, is lo
 | Item | Value |
 |---|---|
 | Network | Casper **Testnet** (`casper-test`, protocol 2.0.0) |
-| Contract package hash | `hash-2e02730283fb38e9ef03699ac81cb93e7c1194237d06b1cde95b4c12ae7b298d` |
+| Contract package hash (v3) | `hash-afdbf6c32a6f6a54ec5aff5ebd8dbd2a92f672cd60e089cf7cb50ed55bc71d7c` |
+| Real custody | Vault holds real CSPR; `get_backing() == get_total_value()` invariant verified on-chain |
 | Owner / agent account | `01559240ecf20a26702948f0a076e85a1c430e1eb20b6627045c5cf43411ddfea2` |
 | Contract source | [contracts/vault_router/src/lib.rs](contracts/vault_router/src/lib.rs) (Odra, Rust) |
-| Full address record | [DEPLOYMENT.md](DEPLOYMENT.md) |
+| Full address record + tx log | [DEPLOYMENT.md](DEPLOYMENT.md) |
 
 ---
 

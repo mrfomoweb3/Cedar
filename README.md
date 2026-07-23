@@ -2,17 +2,17 @@
 
 # 🌲 Cedar — Autonomous Yield-Routing Agent
 
-**An autonomous agent that moves capital on Casper — and knows when to refuse.**
+**An autonomous agent that moves _real capital_ on Casper — and knows when to refuse.**
 
-Cedar observes DeFi pool yields on Casper, reasons over them with an LLM, and — with **no human in the loop** — signs and submits real on-chain reallocations to an owner-gated smart contract. Every action clears a defense-in-depth safety pipeline; every decision, including every refusal, is logged and auditable.
+Cedar custodies **real CSPR** in an owner-gated Odra vault, observes DeFi pool yields, reasons over them with an LLM, and — with **no human in the loop** — signs and submits its own on-chain reallocations. Every action clears a defense-in-depth safety pipeline where every link can veto the model; every decision, including every refusal, is logged and auditable. Not a chatbot with a wallet — **accountable autonomy.**
 
 [![Live](https://img.shields.io/badge/live-trycedar.xyz-1A5C2E)](https://trycedar.xyz)
-[![Network](https://img.shields.io/badge/network-Casper%20Testnet-blue)](https://testnet.cspr.live/contract-package/2e02730283fb38e9ef03699ac81cb93e7c1194237d06b1cde95b4c12ae7b298d)
+[![Network](https://img.shields.io/badge/network-Casper%20Testnet-blue)](https://testnet.cspr.live/contract-package/afdbf6c32a6f6a54ec5aff5ebd8dbd2a92f672cd60e089cf7cb50ed55bc71d7c)
 [![Reasoning](https://img.shields.io/badge/reasoning-Groq%20·%20Llama%203.3-orange)](https://groq.com)
 [![Contract](https://img.shields.io/badge/contract-Odra%20·%20Rust-red)](contracts/vault_router/src/lib.rs)
-[![Tests](https://img.shields.io/badge/tests-43%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-50%20passing-brightgreen)](tests/)
 
-[**Live app**](https://trycedar.xyz) · [**Docs**](https://trycedar.xyz/docs) · [**X @trycedar**](https://x.com/trycedar) · [**Contract on explorer**](https://testnet.cspr.live/contract-package/2e02730283fb38e9ef03699ac81cb93e7c1194237d06b1cde95b4c12ae7b298d) · [**On-chain record**](DEPLOYMENT.md) · [**Test it in 5 min**](TESTING.md)
+[**Live app**](https://trycedar.xyz) · [**Docs**](https://trycedar.xyz/docs) · [**X @trycedar**](https://x.com/trycedar) · [**Contract on explorer**](https://testnet.cspr.live/contract-package/afdbf6c32a6f6a54ec5aff5ebd8dbd2a92f672cd60e089cf7cb50ed55bc71d7c) · [**On-chain record**](DEPLOYMENT.md) · [**Test it in 5 min**](TESTING.md)
 
 </div>
 
@@ -38,7 +38,7 @@ Cedar observes DeFi pool yields on Casper, reasons over them with an LLM, and �
 
 ## Why Cedar
 
-The core thesis: **an autonomous agent that touches money is only as good as the things it refuses to do.**
+The core thesis: **an autonomous agent that touches _real money_ is only as good as the things it refuses to do.** Cedar custodies real CSPR on-chain, then governs it under a mandate whose every move — and every refusal — is provable.
 
 Most "AI agent" demos are a single LLM call wired straight to an action. Cedar is the opposite — the LLM is one link in a chain where **every other link can veto it**:
 
@@ -223,20 +223,21 @@ Base URL: same origin as the dashboard (`https://trycedar.xyz`).
 
 ---
 
-## Smart contract — `VaultRouter`
+## Smart contract — `VaultRouter` (v3, real CSPR custody)
 
-Minimal by design ([`contracts/vault_router/src/lib.rs`](contracts/vault_router/src/lib.rs)), written in **Odra** (Rust):
+Written in **Odra** (Rust), [`contracts/vault_router/src/lib.rs`](contracts/vault_router/src/lib.rs). The vault **custodies real CSPR** — not a records-only ledger:
 
 | Entrypoint | Access | Effect |
 |---|---|---|
 | `init()` | constructor | Installer becomes **owner** |
-| `deposit(pool_id, amount)` | **owner-only** | Records allocation, emits `Deposited` |
-| `reallocate(from_pool, to_pool, amount)` | **owner-only** | Moves allocation, emits `Reallocated` — *the transaction-producing action* |
-| `get_allocation` · `get_total_value` · `get_owner` | view | Reads |
+| `deposit(pool_id)` | **owner-only, payable** | Custodies the **attached CSPR**; emits `Deposited` |
+| `reallocate(from_pool, to_pool, amount)` | **owner-only** | Re-earmarks custodied CSPR — *the agent's autonomous action* |
+| `withdraw(pool_id, amount, to)` | **owner-only** | Sends **real CSPR** back out; emits `Withdrawn` |
+| `get_backing` · `get_allocation` · `get_total_value` · `get_owner` | view | Reads |
 
-Pools are a fixed three-member enum (`PoolA/B/C`) matching the pre-vetted allow-list. Because entrypoints are owner-gated, **only the agent's key can actuate** — the contract enforces server-side signing as the sole write path.
+**On-chain invariant:** `get_backing()` (the contract's true CSPR balance) `== get_total_value()` (sum of earmarks) after every entrypoint — so allocations are provably backed **1:1** by real value. Owner-gated, so **only the agent's key can actuate**.
 
-**Live on Casper Testnet:** [`hash-dc100561…b1828135`](https://testnet.cspr.live/contract-package/2e02730283fb38e9ef03699ac81cb93e7c1194237d06b1cde95b4c12ae7b298d) — full address record in **[DEPLOYMENT.md](DEPLOYMENT.md)**.
+**Live on Casper Testnet (v3):** [`hash-afdbf6c3…5bc71d7c`](https://testnet.cspr.live/contract-package/afdbf6c32a6f6a54ec5aff5ebd8dbd2a92f672cd60e089cf7cb50ed55bc71d7c) — real deposit / reallocate / withdraw txns in **[DEPLOYMENT.md](DEPLOYMENT.md)**.
 
 ```bash
 cd contracts/vault_router && cargo test     # native Odra MockVM tests
