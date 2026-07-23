@@ -29,6 +29,13 @@ log = logging.getLogger("cedar.chain_state")
 ALLOCATIONS_FIELD_INDEX = int(os.getenv("CEDAR_ALLOC_FIELD_INDEX", "2"))
 
 
+def _motes_scale() -> float:
+    """Divisor mapping the contract's stored units to the agent's CSPR units.
+    1 = the contract stores whole units (v2, records-only). 1e9 = the contract
+    stores motes (v3, real CSPR custody), so read-back is scaled to whole CSPR."""
+    return float(os.getenv("CEDAR_MOTES_SCALE", "1") or "1")
+
+
 class ChainAllocationReader:
     def __init__(self, node_url: Optional[str] = None,
                  package_hash: Optional[str] = None):
@@ -95,7 +102,7 @@ class ChainAllocationReader:
                         "key": contract, "dictionary_name": "state",
                         "dictionary_item_key": self._item_key(i)}},
                 })
-                out[pid] = self._decode_u512(res["stored_value"]["CLValue"])
+                out[pid] = self._decode_u512(res["stored_value"]["CLValue"]) / _motes_scale()
             except RuntimeError as exc:
                 # "value not found" == never written == 0 (get_or_default)
                 if "not found" in str(exc).lower():

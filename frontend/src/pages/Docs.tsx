@@ -3,7 +3,7 @@ import mark from '../assets/cedar-mark.png';
 import { ThemeToggle } from '../components/ThemeToggle';
 import '../docs.css';
 
-const CONTRACT = '2e02730283fb38e9ef03699ac81cb93e7c1194237d06b1cde95b4c12ae7b298d';
+const CONTRACT = 'afdbf6c32a6f6a54ec5aff5ebd8dbd2a92f672cd60e089cf7cb50ed55bc71d7c';
 const EXPLORER = `https://testnet.cspr.live/contract-package/${CONTRACT}`;
 
 const PIPELINE = [
@@ -30,6 +30,8 @@ const FEATURES = [
   { i: '🔁', t: 'Independent recheck', d: 'A deterministic engine recomputes each decision. Model and rule must agree, or the agent refuses.' },
   { i: '🛡️', t: 'Named guardrails', d: 'Cooldown, position cap, cost check, anomaly breaker — each refusal is logged with the exact guardrail that fired.' },
   { i: '🔎', t: 'Honest provenance', d: 'Single-source data is surfaced as UNVERIFIED, never silently trusted. The agent tells you when it’s flying with one eye.' },
+  { i: '🗣️', t: 'Plain-English mandates', d: 'Set a standing instruction in a sentence ("stay conservative; keep 20% in PoolC"). The LLM honors it — but only within the safety envelope the recheck enforces.' },
+  { i: '🏦', t: 'Real CSPR custody', d: 'The Odra vault holds real CSPR: deposit/withdraw are real transfers and an on-chain invariant keeps earmarks backed 1:1. Verifiable on the explorer.' },
   { i: '⛓️', t: 'Real on-chain actuation', d: 'Server-side signing submits a real reallocate deploy to an owner-gated Odra contract on Casper Testnet — verifiable on the explorer.' },
   { i: '💸', t: 'Cost-guarded', d: 'The LLM is called only when capital might move — skipped on clear holds, during cooldown, and past a daily budget.' },
   { i: '📜', t: 'Every-path audit log', d: 'One durable record per cycle powers the live feed and a full paginated audit trail. Nothing is hidden.' },

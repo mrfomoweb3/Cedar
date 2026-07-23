@@ -5,7 +5,7 @@ import mark from '../assets/cedar-mark.png';
 import { ThemeToggle } from '../components/ThemeToggle';
 import '../landing.css';
 
-const CONTRACT = '2e02730283fb38e9ef03699ac81cb93e7c1194237d06b1cde95b4c12ae7b298d';
+const CONTRACT = 'afdbf6c32a6f6a54ec5aff5ebd8dbd2a92f672cd60e089cf7cb50ed55bc71d7c';
 const EXPLORER = `https://testnet.cspr.live/contract-package/${CONTRACT}`;
 
 const LOOP = [
@@ -70,8 +70,9 @@ export function Landing() {
           Autonomous capital movement,<br />with a built-in <span className="lp-grad">“no.”</span>
         </h1>
         <p className="lp-sub">
-          Cedar watches Casper yields and signs its own reallocations, no human in the loop.
-          Every action clears a safety pipeline; every refusal is logged.
+          Cedar custodies real CSPR on Casper and signs its own reallocations under a
+          plain-English mandate — no human in the loop. Every action clears a safety
+          pipeline; every refusal is logged.
         </p>
         <div className="lp-cta-row">
           <Link to="/app" className="lp-btn lp-btn-primary lp-btn-lg">Launch the live agent →</Link>
@@ -150,12 +151,12 @@ export function Landing() {
           to a deployed Odra contract on Casper Testnet — verifiable on the explorer.
         </p>
         <div className="lp-proof">
-          <div className="lp-proof-row"><span className="lp-proof-k">Contract (owner-gated)</span>
+          <div className="lp-proof-row"><span className="lp-proof-k">Vault (real CSPR custody, owner-gated)</span>
             <a href={EXPLORER} target="_blank" rel="noreferrer" className="mono lp-link">{CONTRACT.slice(0, 10)}…{CONTRACT.slice(-6)} ↗</a></div>
+          <div className="lp-proof-row"><span className="lp-proof-k">Real deposit (custody)</span>
+            <a href="https://testnet.cspr.live/transaction/d9be93020cdd8c3d599c74626430bb6c0e3c3284e61d37223efa825149d0dcf6" target="_blank" rel="noreferrer" className="mono lp-link">d9be9302…dcf6 ↗</a></div>
           <div className="lp-proof-row"><span className="lp-proof-k">Autonomous reallocation</span>
-            <a href="https://testnet.cspr.live/deploy/0b80e11e8bb6127930e259fde4767f9a2f7a7954e143cb49ef792c96b9194ac7" target="_blank" rel="noreferrer" className="mono lp-link">0b80e11e…4ac7 ↗</a></div>
-          <div className="lp-proof-row"><span className="lp-proof-k">Refusal on real data</span>
-            <span className="mono" style={{ color: 'var(--blocked)' }}>recheck disagreement → HOLD</span></div>
+            <a href="https://testnet.cspr.live/transaction/a453635090e1ab68ec360b98380a7ebc716f1aa40439f537bfdf5d7f4f0b67c0" target="_blank" rel="noreferrer" className="mono lp-link">a4536350…67c0 ↗</a></div>
         </div>
         <div style={{ marginTop: 28 }}>
           <Link to="/app" className="lp-btn lp-btn-primary lp-btn-lg">Watch it decide, live →</Link>

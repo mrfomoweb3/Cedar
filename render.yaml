@@ -41,7 +41,9 @@ services:
       - key: CASPER_CHAIN
         value: casper-test
       - key: VAULT_ROUTER_HASH
-        value: hash-2e02730283fb38e9ef03699ac81cb93e7c1194237d06b1cde95b4c12ae7b298d
+        value: hash-afdbf6c32a6f6a54ec5aff5ebd8dbd2a92f672cd60e089cf7cb50ed55bc71d7c
+      - key: CEDAR_MOTES_SCALE
+        value: "1000000000"   # v3 stores motes; 1e9 maps to whole CSPR (v2 used 1)
       - key: CSPR_TRADE_MCP_URL
         value: https://mcp.cspr.trade/mcp
       - key: CASPER_MCP_URL

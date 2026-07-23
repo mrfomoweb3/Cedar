@@ -180,7 +180,10 @@ class CasperKeySigner:
     def reallocate(self, from_pool: str, to_pool: str, amount: float) -> str:
         if from_pool not in POOL_INDEX or to_pool not in POOL_INDEX:
             raise ValueError(f"unknown pool: {from_pool} / {to_pool}")
-        amt = int(round(amount))  # contract tracks U512 whole units
+        # CEDAR_MOTES_SCALE maps the agent's CSPR-denominated amount to the
+        # contract's stored units: 1 for v2 (whole units), 1e9 for v3 (motes).
+        scale = float(os.getenv("CEDAR_MOTES_SCALE", "1") or "1")
+        amt = int(round(amount * scale))
         result = self._run([
             "put-deploy",
             "--node-address", self.node_url,
