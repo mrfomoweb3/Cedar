@@ -10,11 +10,22 @@ Cedar custodies **real CSPR** in an owner-gated Odra vault, observes DeFi pool y
 [![Network](https://img.shields.io/badge/network-Casper%20Testnet-blue)](https://testnet.cspr.live/contract-package/afdbf6c32a6f6a54ec5aff5ebd8dbd2a92f672cd60e089cf7cb50ed55bc71d7c)
 [![Reasoning](https://img.shields.io/badge/reasoning-Groq%20·%20Llama%203.3-orange)](https://groq.com)
 [![Contract](https://img.shields.io/badge/contract-Odra%20·%20Rust-red)](contracts/vault_router/src/lib.rs)
-[![Tests](https://img.shields.io/badge/tests-50%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-55%20passing-brightgreen)](tests/)
 
 [**Live app**](https://trycedar.xyz) · [**Docs**](https://trycedar.xyz/docs) · [**X @trycedar**](https://x.com/trycedar) · [**Contract on explorer**](https://testnet.cspr.live/contract-package/afdbf6c32a6f6a54ec5aff5ebd8dbd2a92f672cd60e089cf7cb50ed55bc71d7c) · [**On-chain record**](DEPLOYMENT.md) · [**Test it in 5 min**](TESTING.md)
 
 </div>
+
+---
+
+## What's new since Round 1
+
+Two upgrades that turn "an agent that reallocates records" into **an agent that moves real capital under a mandate it can prove it obeyed:**
+
+- **🏦 Real CSPR custody** — `VaultRouter` v3 is a payable Odra vault that **holds real CSPR** (not a records ledger). `deposit`/`withdraw` are real on-chain transfers, and an on-chain invariant keeps every earmark backed **1:1** by the contract's actual balance. Verifiable on the explorer.
+- **🗣️ Plain-English mandates** — set your strategy in a sentence ("stay conservative; keep 20% in the stable pool"). The LLM honors it, but the deterministic recheck enforces the mandate's **safety envelope** — so a model that wants to move 500 is held to 200. The LLM is now genuinely load-bearing.
+
+The live agent governs a real **465 CSPR** position on testnet, signing its own reallocations. See [DEPLOYMENT.md](DEPLOYMENT.md) for the verifiable custody transactions.
 
 ---
 
@@ -140,7 +151,7 @@ git clone https://github.com/mrfomoweb3/Cedar.git && cd Cedar
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-pytest -q                         # run the full test suite (43 passing)
+pytest -q                         # run the full test suite (55 passing)
 cp .env.example .env              # defaults run offline in mock mode
 uvicorn api.main:app --reload     # http://localhost:8000
 ```
@@ -320,7 +331,7 @@ api/
   main.py                 FastAPI control plane + serves the dashboard
   store.py                SQLAlchemy store (cycles, policy, allocations, run-state)
 frontend/                 React + Vite dashboard, landing, and /docs
-tests/                    per-segment test gates (43 Python)
+tests/                    per-segment test gates (55 Python)
 scripts/                  deploy_contract.sh · seed_demo.py
 ```
 
