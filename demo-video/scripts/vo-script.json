@@ -1,33 +1,33 @@
 {
-  "voice_note": "Narrator: confident, warm, measured pace. ElevenLabs 'Brian' (nPczCjzI2devNBz1zQrb), model eleven_multilingual_v2, stability 0.5, similarity 0.75, style 0.2.",
+  "voice_note": "Narrator: confident, warm, measured. ElevenLabs 'Brian' (nPczCjzI2devNBz1zQrb), model eleven_multilingual_v2, stability 0.5, similarity 0.75, style 0.2.",
   "scenes": [
     {
       "id": "intro",
-      "text": "This is Cedar. An autonomous yield-routing agent on the Casper network. It watches DeFi pools, reasons with a language model, and signs its own on-chain transactions. No human in the loop. And that is exactly why it was built differently."
+      "text": "This is Cedar — an autonomous yield agent on the Casper network. Since our last update, it does something most agents only claim to: it moves real capital, under a mandate it can prove it obeyed. Here's what's new."
     },
     {
-      "id": "problem",
-      "text": "Most AI agent demos are a language model wired straight to an action. That's fine for a chatbot. It's reckless for money. An autonomous agent that touches capital is only as good as the things it refuses to do. So Cedar puts the model inside a pipeline — where every other link can veto it."
+      "id": "mandate",
+      "text": "First — you set the strategy in plain English. Tell Cedar: stay conservative, and keep at least twenty percent in the stable pool. A language model — Llama three point three — reads that mandate and decides. But the model doesn't get the last word. A deterministic engine re-derives the move and checks it against your mandate's safety envelope. Cap a move at twenty percent, and even if the model wants to move five hundred, it's held to two hundred. The AI proposes. The rules dispose."
+    },
+    {
+      "id": "custody",
+      "text": "Second — and this is the big one — Cedar now custodies real CSPR. The vault is an Odra smart contract that actually holds the funds. Deposits and withdrawals are real on-chain transfers. And an on-chain invariant guarantees every allocation is backed, one to one, by real value inside the contract. This is not a ledger of intent — it's real capital. Deposit, reallocate, withdraw: every one verifiable on the explorer."
     },
     {
       "id": "loop",
-      "text": "Every cycle runs six steps. Observe: pull live pool yields, and read allocations directly from contract storage. Validate: reject bad data — a nine thousand percent APY is a broken feed, not a jackpot. Reason: Llama three point three decides — hold, or reallocate — seeing only the validated snapshot. Recheck: a deterministic engine re-derives the same decision from the same data. If they disagree, Cedar refuses. Guardrails: cooldown, position cap, cost versus gain, and an anomaly breaker. Then, and only then — actuate. Sign the transaction, and submit it to Casper."
+      "text": "Every move still clears the same safety pipeline. Observe live yields and the on-chain balance. Validate — bad data is rejected before the model ever sees it. Reason, then recheck. Guardrails: cooldown, position cap, cost versus gain. Then, and only then, actuate — sign, and submit to Casper. No confirm button. No human in the loop."
     },
     {
       "id": "safety",
-      "text": "The safety is not a prompt. It's code. Every number the model cites is checked against the real snapshot — invent a figure, and the cycle is force-held. Single-source data is flagged as unverified, never silently trusted. And every decision — including every refusal — is logged with the exact guardrail that fired."
-    },
-    {
-      "id": "contract",
-      "text": "On chain, Cedar actuates through VaultRouter — a smart contract written in Rust with the Odra framework, deployed on Casper Testnet. Every state-changing entry point is owner-gated. Only the agent's key can call reallocate — the contract itself enforces that. And this is not simulated. Here is a real reallocation, verifiable on the explorer: pool A to pool B, signed autonomously, executed on chain."
+      "text": "And it refuses. Every figure the model cites is checked against real data — fabricate a number, and the cycle is force-held, in code, not a prompt. Every decision, and every refusal, is logged with the exact reason it fired."
     },
     {
       "id": "live",
-      "text": "It's running live, right now, at try cedar dot x-y-z. The dashboard streams every cycle: executed moves with their transaction hashes, blocked moves with the guardrail that stopped them, and the agent's reasoning in plain English. You can pause it, tune the policy, and audit every decision it has ever made."
+      "text": "It's live right now, at try cedar dot x-y-z — governing a real four hundred and sixty-five CSPR position on testnet. The dashboard streams every cycle: the mandate, the reasoning in plain English, the reallocations with their transaction hashes, and the moves it blocked."
     },
     {
       "id": "outro",
-      "text": "Cedar. Autonomous capital movement — with a built-in no. Open source, MIT licensed, live on Casper Testnet. Built for the Casper Agentic Buildathon."
+      "text": "Cedar. Real capital. Plain-English mandates. Provable obedience. Open source, MIT licensed, live on Casper testnet — for the Casper Agentic Buildathon."
     }
   ]
 }

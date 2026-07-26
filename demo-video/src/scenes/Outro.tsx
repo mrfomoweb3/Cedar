@@ -19,9 +19,9 @@ export const Outro: React.FC<{ durationInFrames: number }> = ({ durationInFrames
           </div>
 
           <Rise delay={16}>
-            <div style={{ fontSize: 44, color: T.text2, fontWeight: 600 }}>
-              Autonomous capital movement — with a built-in{' '}
-              <span style={{ color: T.accent, fontWeight: 800 }}>“no.”</span>
+            <div style={{ fontSize: 42, color: T.text2, fontWeight: 600, textAlign: 'center' }}>
+              Real capital · plain-English mandates ·{' '}
+              <span style={{ color: T.accent, fontWeight: 800 }}>provable obedience.</span>
             </div>
           </Rise>
 

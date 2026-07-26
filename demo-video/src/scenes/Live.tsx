@@ -70,7 +70,7 @@ export const Live: React.FC<{ durationInFrames: number }> = ({ durationInFrames 
 
           {/* narration-timed callouts */}
           <Rise delay={Math.round(d * 0.35)} style={{ position: 'absolute', bottom: 64, display: 'flex', gap: 18 }}>
-            {['EXECUTED + tx hash', 'BLOCKED + guardrail name', 'plain-English reasoning', 'pause · policy · audit'].map(
+            {['465 CSPR real custody', 'EXECUTED + tx hash', 'the active mandate', 'plain-English reasoning'].map(
               (t) => (
                 <span
                   key={t}

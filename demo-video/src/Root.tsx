@@ -2,22 +2,22 @@ import React from 'react';
 import { Audio, Composition, Sequence, staticFile } from 'remotion';
 import manifest from './audio-manifest.json';
 import { FPS, H, W } from './theme';
-import { Contract } from './scenes/Contract';
+import { Custody } from './scenes/Custody';
 import { Intro } from './scenes/Intro';
 import { Live } from './scenes/Live';
 import { Loop } from './scenes/Loop';
+import { Mandate } from './scenes/Mandate';
 import { Outro } from './scenes/Outro';
-import { Problem } from './scenes/Problem';
 import { Safety } from './scenes/Safety';
 
 const TAIL = 0.9; // seconds of breathing room after each narration
 
 const ORDER: { id: keyof typeof manifest; C: React.FC<{ durationInFrames: number }> }[] = [
   { id: 'intro', C: Intro },
-  { id: 'problem', C: Problem },
+  { id: 'mandate', C: Mandate },
+  { id: 'custody', C: Custody },
   { id: 'loop', C: Loop },
   { id: 'safety', C: Safety },
-  { id: 'contract', C: Contract },
   { id: 'live', C: Live },
   { id: 'outro', C: Outro },
 ];

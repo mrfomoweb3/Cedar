@@ -18,18 +18,17 @@ export const Intro: React.FC<{ durationInFrames: number }> = ({ durationInFrames
           </div>
 
           <Rise delay={22}>
-            <div style={{ fontSize: 52, fontWeight: 600, color: T.text2, textAlign: 'center', lineHeight: 1.25 }}>
-              Autonomous capital movement,
+            <div style={{ fontSize: 50, fontWeight: 600, color: T.text2, textAlign: 'center', lineHeight: 1.25 }}>
+              Moves <span style={{ color: T.accent, fontWeight: 800 }}>real capital</span> — under a mandate
               <br />
-              with a built-in{' '}
-              <span style={{ color: T.accent, fontWeight: 800 }}>“no.”</span>
+              it can <span style={{ color: T.accent, fontWeight: 800 }}>prove</span> it obeyed.
             </div>
           </Rise>
 
           <Rise delay={70}>
             <div style={{ display: 'flex', gap: 18, marginTop: 26 }}>
-              <Chip color={T.accent}>● CASPER TESTNET</Chip>
-              <Chip>LLM-REASONED</Chip>
+              <Chip color={T.accent}>● REAL CSPR CUSTODY</Chip>
+              <Chip>PLAIN-ENGLISH MANDATES</Chip>
               <Chip>SELF-SIGNING</Chip>
               <Chip>NO HUMAN IN THE LOOP</Chip>
             </div>
